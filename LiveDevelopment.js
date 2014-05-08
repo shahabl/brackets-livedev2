@@ -157,11 +157,9 @@ define(function (require, exports, module) {
      * @return {function} The constructor for the live document class; will be a subclass of LiveDocument.
      */
     function _classForDocument(doc) {
-        // TODO: not yet required in the prototype - this will only be called with CSS files
-        // once we start gathering related CSS documents. See "styleSheetAdded()" below.
-//        if (doc.getLanguage().getId() === "css") {
-//            return LiveCSSDocument;
-//        }
+        if (doc.getLanguage().getId() === "css") {
+            return LiveCSSDocument;
+        }
 
         if (_isHtmlFileExt(doc.file.fullPath)) {
             return LiveHTMLDocument;
@@ -287,11 +285,12 @@ define(function (require, exports, module) {
      * editor and the browser.
      * @param {Document} doc
      * @param {Editor} editor
+     * @param {Connections} connections
      * @return {?LiveDocument} The live document, or null if this type of file doesn't support live editing.
      */
-    function _createLiveDocument(doc, editor) {
+    function _createLiveDocument(doc, editor, connections) {
         var DocClass        = _classForDocument(doc),
-            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor);
+            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor, connections);
 
         if (!DocClass) {
             return null;
@@ -329,6 +328,7 @@ define(function (require, exports, module) {
      * @param {$.Event} event
      * @param {string} url The URL of the stylesheet that was added.
      */
+     /* this funcion is not needed now
     function _styleSheetAdded(event, url) {
         var path = _server && _server.urlToPath(url),
             alreadyAdded = !!_relatedDocuments[url];
@@ -346,7 +346,7 @@ define(function (require, exports, module) {
         docPromise.done(function (doc) {
             if ((_classForDocument(doc) === LiveCSSDocument) &&
                     (!_liveDocument || (doc !== _liveDocument.doc))) {
-                var liveDoc = _createLiveDocument(doc);
+                var liveDoc = _createLiveDocument(doc, null, _liveDocument._connections);
                 if (liveDoc) {
                     _server.add(liveDoc);
                     _relatedDocuments[doc.url] = liveDoc;
@@ -355,7 +355,7 @@ define(function (require, exports, module) {
                 }
             }
         });
-    }
+    } */
 
     /**
      * @private
@@ -502,7 +502,7 @@ define(function (require, exports, module) {
         // TODO: don't have a way to close windows in the new architecture
 //        if (doCloseWindow) {
 //        }
-        
+       
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
 
@@ -567,7 +567,7 @@ define(function (require, exports, module) {
                 // TODO: timeout if we don't get a connection within a certain time
                 $(_liveDocument).one("connect", function (event, url) {
                     var doc = _getCurrentDocument();
-                    if (doc && url === _resolveUrl(doc.file.fullPath)) {
+                    if (doc && url === _resolveUrl(doc.file.fullPath)) { //:SL This fails if the document is not the same as live document (i.e. something other than index.html is in editor)
                         _setStatus(STATUS_ACTIVE);
                     }
                 });
@@ -675,6 +675,9 @@ define(function (require, exports, module) {
             prepareServerPromise
                 .done(function () {
                     _doLaunchAfterServerReady(doc);
+                    if(doc.file._path !== _getCurrentDocument().file.path) {
+                        _onDocumentChange();
+                    }
                 })
                 .fail(function () {
                     _showWrongDocError();
@@ -697,9 +700,14 @@ define(function (require, exports, module) {
         var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
             isViewable = _server && _server.canServe(doc.file.fullPath);
         
+        if(_liveDocument.doc.url === docUrl) {  // if returning to the same document
+            return;
+        }
         if (isViewable) {
             // Update status
             _setStatus(STATUS_CONNECTING);
+            
+            _protocol.evaluate(_liveDocument.getConnectionIds(), "_LD.loadPage(" + JSON.stringify(docUrl) + ")");
 
             // clear live doc and related docs
             _closeDocuments();
@@ -707,8 +715,36 @@ define(function (require, exports, module) {
             // create new live doc
             _createLiveDocumentForFrame(doc);
 
-            open();
+            //: No need to open();
+        } else {
+        
+            var path = doc.file.fullPath,
+                alreadyAdded = !!_relatedDocuments[path];
+
+            // path may be null if loading an external stylesheet.
+            // Also, the stylesheet may already exist and be reported as added twice
+            // due to Chrome reporting added/removed events after incremental changes
+            // are pushed to the browser
+            if (!path || alreadyAdded) {
+                return;
+            }
+
+            var docPromise = DocumentManager.getDocumentForPath(path);
+
+            docPromise.done(function (doc) {
+                if ((_classForDocument(doc) === LiveCSSDocument) &&
+                        (!_liveDocument || (doc !== _liveDocument.doc))) {
+                    var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);  // share connections with the CSS doc
+                    if (liveDoc) {
+                        _server.add(liveDoc);
+                        _relatedDocuments[doc.url] = liveDoc;
+
+                        $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
+                    }
+                }
+            });
         }
+        
     }
 
     /**

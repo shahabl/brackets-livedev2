@@ -40,7 +40,9 @@ define(function (require, exports, module) {
         StringUtils         = brackets.getModule("utils/StringUtils"),
         _                   = brackets.getModule("thirdparty/lodash"),
         LiveDocument        = require("documents/LiveDocument"),
-        HTMLInstrumentation = require("language/HTMLInstrumentation");
+        HTMLInstrumentation = require("language/HTMLInstrumentation"),
+        RemoteFunctions = require("text!protocol/remote/RemoteFunctions.js");
+
 
     /**
      * @constructor
@@ -82,12 +84,12 @@ define(function (require, exports, module) {
         if (url === this.urlResolver(this.doc.file.fullPath)) {
             // TODO: possible race condition if someone tries to access RemoteFunctions before this
             // injection is completed
-            brackets.getModule(["text!LiveDevelopment/Agents/RemoteFunctions.js"], function (RemoteFunctions) {
-                // Inject our remote functions into the browser.
-                var command = "window._LD=" + RemoteFunctions + "();";
-                // TODO: handle error, wasThrown?
-                self.protocol.evaluate([clientId], command);
-            });
+
+            // Inject our remote functions into the browser.
+            var command = "window._LD=" + RemoteFunctions + "();";
+            // TODO: handle error, wasThrown?
+            self.protocol.evaluate([clientId], command);
+
         }
         
         // TODO: race condition if the version of the instrumented HTML that the browser loaded is out of sync with

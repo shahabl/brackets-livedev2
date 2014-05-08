@@ -107,7 +107,7 @@
                             url: msgObj.url,
                             socket: ws
                         };
-                        console.log("emitting connect event");
+                        console.log("emitting connect event, id: "+clientId+", ws: "+ws);
                         _domainManager.emitEvent("nodeSocketTransport", "connect", [clientId, msgObj.url]);
                     } else if (msgObj.type === "message") {
                         var client = _clientForSocket(ws);

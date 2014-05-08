@@ -8,11 +8,8 @@ If you install the extension, you'll get a second lightning bolt on the toolbar 
 
 Lots:
 
-* CSS live development isn't implemented - this will need code to handle hot replacement of stylesheets in the browser (in the protocol layer and in the remote protocol script), and requires re-enabling of various commented-out code in LiveCSSDocument and in LiveDevelopment that tracks requested CSS files.
-* The current live development workflow (only one preview open at a time, switching when you switch editors) isn't supported well:
-    * Closing live dev doesn't close the window in the browser. This might be impossible due to the restriction that JS can't close windows that aren't opened via JS, but we need to at least show something in the browser indicating that the connection was terminated.
-    * Switching files in Brackets opens a new tab (and old tab is no longer connected, but there's no visible indication to the user). This is partly FOL due to closing live dev not closing the window in the browser. We should consider changing the workflow to allow multiple files to be previewed anyway (rather than only having a single preview that changes as you switch files in Brackets).
-    * Lightning bolt doesn't turn off when browser preview is closed. Haven't thought through how we should indicate in the UI when multiple browser clients are active, and whether we should turn the lightning bolt off when the last one disconnects - this might also change if we change the workflow to allow multiple files to be previewed
+* Closing live dev doesn't close the window in the browser. This could be done by killing the process.
+* Lightning bolt doesn't turn off when browser preview is closed. Haven't thought through how we should indicate in the UI when multiple browser clients are active, and whether we should turn the lightning bolt off when the last one disconnects - this might also change if we change the workflow to allow multiple files to be previewed
 * I wanted to change up how the Server stuff worked, but it turned out not to be necessary for the prototype and it might just be orthogonal.
 * No unit tests (the original Live Dev tests would need to be completely rewritten - and ideally in a more granular fashion with mocks)
 
@@ -63,7 +60,7 @@ Here's a short summary of what happens when the user clicks on the Live Preview 
 5. LiveHTMLDocument instruments the page for live editing using the existing HTMLInstrumentation mechanism, and additionally includes remote scripts provided by the protocol (LiveDevProtocolRemote) and transport (NodeSocketTransportRemote). (The transport script includes the URL for the WebSocket server created in step 3.)
 6. The instrumented page is sent back to StaticServer, which responds to the browser with the instrumented version. Other files requested by the browser are simply returned directly by StaticServer.
 7. As the browser loads the page, it encounters the injected transport and protocol scripts. The transport script connects back to the NodeSocketTransport's WebSocket server created in step 3 and sends it a "connect" message to tell it what URL has been loaded in the browser. The NodeSocketTransport assigns the socket a client id so it can keep track of which socket is associated with which page instance, then raises a "connect" event.
-8. The LiveHTMLDocument receives the "connect" event and makes a note of the associated client ID. It injects its own script (RemoteFunctions, from the main Brackets codebase) that handles higher-level functionality like highlighting and applying DOM edits.
+8. The LiveHTMLDocument receives the "connect" event and makes a note of the associated client ID. It injects its own script (RemoteFunctions) that handles higher-level functionality like highlighting and applying DOM edits.
 9. As the user makes live edits or changes selection, LiveHTMLDocument calls the protocol handler's "evaluate" function to call functions from the injected RemoteFunctions.
 10. The protocol's "evaluate" method packages up the request as a JSON message and sends it via the transport.
 11. The remote transport handler unpacks the message and passes it to the remote protocol handler, which finally interprets it and evals its content.
@@ -73,32 +70,6 @@ Here's a short summary of what happens when the user clicks on the Live Preview 
 
 The main next steps are:
 
-#### Strategy for including the new functionality in the XDK
-
-TBD. Not sure if we want to get this into Brackets core before 1.0, so we'll probably need a way to let the XDK remove the existing LiveDevelopment and include the extension. The main issue here is that the LiveDevServerManager and Servers would still need to be instantiated (they're not currently in the extension).
-
-#### Internal (iframe) preview transport
-
-The XDK would like to provide a live preview in the app itself (rather than in an external browser). This should be easy to implement by simply creating a different transport that opens the document in an `<iframe>` and communicates with it via `postMessage()`.
-
-We might also need to add a way to allow for multiple transports to be active at the same time.
-
-#### CSS live editing
-
-Implementing CSS live editing requires implementing protocol APIs that are similar to what CDT provided:
-
-1. raise events when stylesheets are loaded in the browser (so we know which stylesheets need to be tracked)
-2. method to replace the text of a given stylesheet by URL (used when the user edits the CSS file in Brackets)
-3. method to delete a stylesheet (used when the associated CSS file is deleted on disk)
-
-See comments in LiveCSSDocument - essentially we need to reimplement the old CSSAgent methods (which used Inspector.CSS CDT protocol methods) in the new protocol.
-
-Note that we might want to deal with (1) a different way. In the old Live Development, CDT provided us with a unique ID for each loaded stylesheet, and we had to get that information and keep it mapped to the associated URL, then provide that ID when replacing the stylesheet later on. However, for our purposes, we could conceivably just track the stylesheets on the Brackets end, by having the Brackets-side server tell us what stylesheets were requested. Then, when we go to replace them in the browser, we could just replace them by URL rather than having some other separate ID. (The one tricky bit might be path resolution for the URLs specified in the stylesheets in the browser.)
-
-There's a similar need to track other related non-CSS documents (e.g. JS files) that are loaded by the current live HTML file; we do this because for those files, we want to reload the full page whenever the user saves those files. (See comments in LiveDevelopment._onDocumentSaved().) In the old Live Development, we did this by looking at a different CDT event that was sent out whenever the page was about to request a file. Again, I think we could just replace that with the same mechanism described above (having the server tell us what files were requested).
-
-In the future, if we allow multiple files to be previewed simultaneously, we would need to match requested files to the pages that loaded them. I think we could still do that on the Brackets server side by looking at the referrer. 
-
 #### Unit tests
 
 We would definitely need a good suite of unit tests for the new functionality. I suspect it would be easier to just write entirely new, more granular unit tests than to try to reuse the old LiveDevelopment integration tests (which were fragile anyway).
@@ -107,6 +78,13 @@ We would definitely need a good suite of unit tests for the new functionality. I
 
 TBD. My initial thinking for Brackets is that we would turn the lightning bolt into a dropdown button, where clicking on the dropdown arrow would give you a choice of browsers. We would also need some way to configure the browser executable paths, or autodetect them for common cases.
 
+#### 
+
+There's a need to track other related non-CSS documents (e.g. JS files) that are loaded by the current live HTML file; we do this because for those files, we want to reload the full page whenever the user saves those files. (See comments in LiveDevelopment._onDocumentSaved().) In the old Live Development, we did this by looking at a different CDT event that was sent out whenever the page was about to request a file. Again, I think we could just replace that with the same mechanism described above (having the server tell us what files were requested).
+
+We should consider changing the workflow to allow multiple files to be previewed (rather than only having a single preview that changes as you switch files in Brackets).
+In the future, if we allow multiple files to be previewed simultaneously, we would need to match requested files to the pages that loaded them. I think we could still do that on the Brackets server side by looking at the referrer. 
+
 ### Changes from existing LiveDevelopment code
 
 * the existing code for talking to Chrome Developer Tools via the remote debugging interface is gone for now
@@ -114,4 +92,6 @@ TBD. My initial thinking for Brackets is that we would turn the lightning bolt i
 * the "agents" are all gone - a lot of them were dead code anyway; other functionality was rolled into LiveDocument
 * communication is factored into transport and protocol layers (see above)
 * HTMLInstrumentation and HTMLSimpleDOM were modified slightly (which is why they're copied into the extension), to make it possible to inject the remote scripts and to fix an issue with re-instrumenting the HTML when a second browser connects to Live Development. The former change is harmless; the latter change would need some review or possibly more work in order to merge into master. 
+* CSS live editing is enabled differently.  When a CSS file is selected in the editor, its url is sent down to the main live document and compared with all style sheets loaded with a link element, and reloads the CSS file if it's there. 
+* When switching files in the editor, a command is sent to the injected code in browser to load the new file after a set delay (currently 500 mS).
 * ignore the changes to main.js and the copied styles for now - those were just to make this work as an extension and avoid conflicting with the existing LiveDocument functionality
