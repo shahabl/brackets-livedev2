@@ -139,10 +139,11 @@
     /**
      * Initializes the socket server, then launches the given URL in the system default browser.
      * @param {string} url
+     * @return {number} pid of the new browser process
      */
     function _cmdLaunch(url) {
         _createServer();
-        open(url);
+        return open(url);
     }
     
     /**
@@ -194,7 +195,10 @@
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
-            []
+		[]
+            [{name: "pid",  // return value
+                type: "number",
+                description: "pid of the new browser process"}]
         );
         domainManager.registerCommand(
             "nodeSocketTransport",      // domain name
