@@ -27,7 +27,7 @@
     "use strict";
     
     var WebSocketServer = require("ws").Server,
-        open = require("open"),
+        //:open = require("open"),
         _ = require("lodash");
     
     /**
@@ -141,9 +141,12 @@
      * @param {string} url
      * @return {number} pid of the new browser process
      */
-    function _cmdLaunch(url) {
-        _createServer();
-        return open(url);
+    function _cmdLaunch(url, callback) {
+        _createServer();  //:TODO: Need to check for error here?
+        var BrowserControl = require("./BrowserControl");
+        var open = BrowserControl.openLiveBrowser;
+
+        open(url, callback);
     }
     
     /**
@@ -190,7 +193,7 @@
             "nodeSocketTransport",      // domain name
             "launch",       // command name
             _cmdLaunch,     // command handler function
-            false,          // this command is synchronous in Node
+            true,          // this command is asynchronous in Node
             "Launches a given HTML file in the browser for live development",
             [{name: "url", // parameters
                 type: "string",

@@ -83,12 +83,12 @@ define(function (require, exports, module) {
         };
     });
     
-    exports["launch"] = function (url) {
+    exports.launch = function (url) {
         console.log("NodeSocketTransport - launch " + url);
         NodeSocketTransportDomain.exec("launch", url).done(function (pid) {
             console.log("pid = "+pid);
         }).fail(function (err) {
-            console.error("[NodeSocketTransport] failed to launch", err);
+            console.log("[NodeSocketTransport] failed to launch", err);
         });
     };
 
