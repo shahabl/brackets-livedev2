@@ -653,39 +653,6 @@ define(function (require, exports, module) {
     }
 
     /**
-     * Open a live preview on the current docuemnt.
-     */
-    function open() {
-        // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
-        // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
-        _getInitialDocFromCurrent().done(function (doc) {
-            var prepareServerPromise = (doc && _prepareServer(doc)) || new $.Deferred().reject(),
-                otherDocumentsInWorkingFiles;
-
-            if (doc && !doc._masterEditor) {
-                otherDocumentsInWorkingFiles = DocumentManager.getWorkingSet().length;
-                DocumentManager.addToWorkingSet(doc.file);
-
-                if (!otherDocumentsInWorkingFiles) {
-                    DocumentManager.setCurrentDocument(doc);
-                }
-            }
-
-            // wait for server (StaticServer, Base URL or file:)
-            prepareServerPromise
-                .done(function () {
-                    _doLaunchAfterServerReady(doc);
-                    if (doc.file._path !== _getCurrentDocument().file.path) {
-                        _onDocumentChange();
-                    }
-                })
-                .fail(function () {
-                    _showWrongDocError();
-                });
-        });
-    }
-    
-    /**
      * @private
      * When switching documents, close the current preview and open a new one.
      * TODO: closing the current preview doesn't actually work in the new architecture.
@@ -747,6 +714,39 @@ define(function (require, exports, module) {
         
     }
 
+    /**
+     * Open a live preview on the current docuemnt.
+     */
+    function open() {
+        // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
+        // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
+        _getInitialDocFromCurrent().done(function (doc) {
+            var prepareServerPromise = (doc && _prepareServer(doc)) || new $.Deferred().reject(),
+                otherDocumentsInWorkingFiles;
+
+            if (doc && !doc._masterEditor) {
+                otherDocumentsInWorkingFiles = DocumentManager.getWorkingSet().length;
+                DocumentManager.addToWorkingSet(doc.file);
+
+                if (!otherDocumentsInWorkingFiles) {
+                    DocumentManager.setCurrentDocument(doc);
+                }
+            }
+
+            // wait for server (StaticServer, Base URL or file:)
+            prepareServerPromise
+                .done(function () {
+                    _doLaunchAfterServerReady(doc);
+                    if (doc.file._path !== _getCurrentDocument().file.path) {
+                        _onDocumentChange();
+                    }
+                })
+                .fail(function () {
+                    _showWrongDocError();
+                });
+        });
+    }
+    
     /**
      * For files that don't support as-you-type live editing, but are loaded by live HTML documents
      * (e.g. JS files), we want to reload the full document when they're saved.
