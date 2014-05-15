@@ -226,7 +226,9 @@
             if (i !== -1) {
                 liveBrowserOpenedPIDs.splice(i, 1);
             }
-            process.kill(pid);
+            var args = ["/PID"];
+            args.push(pid);
+            spawn("taskkill", args);
         }
         //:TODO: callback needed?
     }
