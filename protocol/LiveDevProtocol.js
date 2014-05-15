@@ -183,9 +183,17 @@ define(function (require, exports, module) {
         _transport.close(clientId);
     }
     
+    /**
+     * Closes all browser Windows.  Proxies to the transport.
+     */
+    function closeAllBrowsers(clientId) {
+        _transport.closeAllBrowsers();
+    }
+    
     exports.setTransport = setTransport;
     exports.getRemoteScript = getRemoteScript;
     exports.launch = launch;
     exports.evaluate = evaluate;
     exports.close = close;
+    exports.closeAllBrowsers = closeAllBrowsers;
 });
