@@ -32,11 +32,17 @@
         //:TODO: Check error codes
         NO_ERROR = 0,
         FILE_NOT_FOUND = -1,
-        CANNOT_RUN_BROWSER=-2;
+        CANNOT_RUN_BROWSER = -2;
 
     var MAC_MDFIND_QUERY    = "mdfind \"kMDItemCFBundleIdentifier == '%s'\"",
         MAC_CODESIGN_QUERY  = "codesign --display \"%s\"",
         MAC_RE_VALUE        = /Executable=(.*)/;
+
+    /**
+     * @private
+     * An array of opened browser pids.
+     */
+    var liveBrowserOpenedPIDs = [];
 
     // The following function is temp for testing, //:TODO: Set and get the appropriate folder
     function getApplicationSupportDirectory() {
@@ -76,40 +82,13 @@
         return deferred.promise();
     }
 
-    /**
-     * Open the live browser
-     *
-     * @param {string} url
-     * @param {function(err)=} callback Asynchronous callback function with one argument (the error)
-     *        Possible error values:
-     *          NO_ERROR
-     *          ERR_INVALID_PARAMS - invalid parameters
-     *          ERR_UNKNOWN - unable to launch the browser
-     *          ERR_NOT_FOUND - unable to find a browers to launch
-     *
-     * @return None. This is an asynchronous call that sends all return information to the callback.
-     */
-    function openLiveBrowser(url, callback) {
-        var openLiveBrowserPlatform = null;
-
-        if (process.platform === "win32") {
-            openLiveBrowserPlatform = _openLiveBrowserWindows;
-        } else if (process.platform === "darwin") {
-            openLiveBrowserPlatform = _openLiveBrowserMac;
-        } else if (process.platform === "linux") {
-            openLiveBrowserPlatform = _openLiveBrowserLinux;
-        }
-        if(openLiveBrowserPlatform) {
-            openLiveBrowserPlatform(url, callback);
-        }
-    }
-
     function _openLiveBrowserLinux(url, callback) {
         var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
         var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
         var res = cpExec("which google-chrome", function (error, path, stderr) {
             if (error === null && path) {
                 var cp = spawn(path.trim(), args);
+                liveBrowserOpenedPIDs.push(cp.pid);
                 callback(null, cp.pid);
             } else {
                 //TODO: Review error handling
@@ -120,25 +99,26 @@
 
     function _openLiveBrowserMac(url, callback) {
         _findAppByKeyMac("com.google.Chrome")
-        .then(function (path) {
-            var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
-            var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
-            //:TODO: The following wont' work if we don't set the remote-debugging-port
-            var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
-                if (path) {
-                    var cp = spawn(path, args);
-                    callback(null, cp.pid);
-                } else {
-                    //TODO: Review error handling
-                    callback(FILE_NOT_FOUND);
-                }
-            });
-        })
-        .fail(function(err){
-            //TODO: Review error handling
-            callback(FILE_NOT_FOUND);
-        })
-        .done();
+            .then(function (path) {
+                var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
+                var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
+                //:TODO: The following wont' work if we don't set the remote-debugging-port
+                var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
+                    if (path) {
+                        var cp = spawn(path, args);
+                        liveBrowserOpenedPIDs.push(cp.pid);
+                        callback(null, cp.pid);
+                    } else {
+                        //TODO: Review error handling
+                        callback(FILE_NOT_FOUND);
+                    }
+                });
+            })
+            .fail(function (err) {
+                //TODO: Review error handling
+                callback(FILE_NOT_FOUND);
+            })
+            .done();
     }
 
     function _openLiveBrowserWindows(url, callback) {
@@ -164,6 +144,7 @@
                         var path = item.value + '\\chrome.exe';
                         var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
                         if (cp.pid !== 0) {
+                            liveBrowserOpenedPIDs.push(cp.pid);
                             callback(null, cp.pid);
                         } else {
                             callback(CANNOT_RUN_BROWSER);
@@ -176,10 +157,11 @@
                 regKey2.values(function (err, items) {
                     if (!err && items) {
                         regKey2.get('Local AppData', function (err, item) {
-                            if(!err && item) {
+                            if (!err && item) {
                                 var path = item.value + '\\Google\\Chrome\\Application\\chrome.exe';
                                 var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
                                 if (cp.pid !== 0) {
+                                    liveBrowserOpenedPIDs.push(cp.pid);
                                     callback(null, cp.pid);
                                 } else {
                                     callback(CANNOT_RUN_BROWSER);
@@ -195,6 +177,34 @@
     }
 
     /**
+     * Open the live browser
+     *
+     * @param {string} url
+     * @param {function(err)=} callback Asynchronous callback function with one argument (the error)
+     *        Possible error values:
+     *          NO_ERROR
+     *          ERR_INVALID_PARAMS - invalid parameters
+     *          ERR_UNKNOWN - unable to launch the browser
+     *          ERR_NOT_FOUND - unable to find a browers to launch
+     *
+     * @return None. This is an asynchronous call that sends all return information to the callback.
+     */
+    function openLiveBrowser(url, callback) {
+        var openLiveBrowserPlatform = null;
+
+        if (process.platform === "win32") {
+            openLiveBrowserPlatform = _openLiveBrowserWindows;
+        } else if (process.platform === "darwin") {
+            openLiveBrowserPlatform = _openLiveBrowserMac;
+        } else if (process.platform === "linux") {
+            openLiveBrowserPlatform = _openLiveBrowserLinux;
+        }
+        if (openLiveBrowserPlatform) {
+            openLiveBrowserPlatform(url, callback);
+        }
+    }
+
+    /**
      * Attempts to close the live browser. The browser can still give the user a chance to override
      * the close attempt if there is a page with unsaved changes. This function will fire the
      * callback when the browser is closed (No_ERROR) or after a three minute timeout (ERR_UNKNOWN). 
@@ -207,12 +217,35 @@
      *
      * @return None. This is an asynchronous call that sends all return information to the callback.
      */
-    function closeLiveBrowser(callback) {
-        callback();
+    function closeLiveBrowser(pid, callback) {
+        if (isNaN(pid)) {
+            pid = 0;
+        }
+        if (pid) {
+            var i = liveBrowserOpenedPIDs.indexOf(pid);
+            if (i !== -1) {
+                liveBrowserOpenedPIDs.splice(i, 1);
+            }
+            process.kill(pid);
+        }
+        //:TODO: callback needed?
+    }
+    
+    /** closeAllLiveBrowsers
+     * Closes all the browsers that were tracked on open
+     * TODO: does not seem to work on Windows
+     * @return {$.Promise}
+     */
+    function closeAllLiveBrowsers() {
+        var length = liveBrowserOpenedPIDs.length;
+        while (liveBrowserOpenedPIDs.length) {
+            closeLiveBrowser(liveBrowserOpenedPIDs[0]);
+        }
     }
 
     exports.NO_ERROR                    = NO_ERROR;
     exports.openLiveBrowser             = openLiveBrowser;
     exports.closeLiveBrowser            = closeLiveBrowser;
+    exports.closeAllLiveBrowsers        = closeAllLiveBrowsers;
 
 }());

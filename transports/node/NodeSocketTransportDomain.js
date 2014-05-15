@@ -27,8 +27,10 @@
     "use strict";
     
     var WebSocketServer = require("ws").Server,
-        //:open = require("open"),
-        _ = require("lodash");
+        _ = require("lodash"),
+        BrowserControl = require("./BrowserControl"),
+        openLiveBrowser = BrowserControl.openLiveBrowser,
+        closeAllLiveBrowsers = BrowserControl.closeAllLiveBrowsers;
     
     /**
      * @private
@@ -107,7 +109,7 @@
                             url: msgObj.url,
                             socket: ws
                         };
-                        console.log("emitting connect event, id: "+clientId+", ws: "+ws);
+                        console.log("emitting connect event, id: " + clientId + ", ws: " + ws);
                         _domainManager.emitEvent("nodeSocketTransport", "connect", [clientId, msgObj.url]);
                     } else if (msgObj.type === "message") {
                         var client = _clientForSocket(ws);
@@ -143,10 +145,7 @@
      */
     function _cmdLaunch(url, callback) {
         _createServer();  //:TODO: Need to check for error here?
-        var BrowserControl = require("./BrowserControl");
-        var open = BrowserControl.openLiveBrowser;
-
-        open(url, callback);
+        openLiveBrowser(url, callback);
     }
     
     /**
@@ -180,6 +179,10 @@
         }
     }
     
+    function _cmdCloseAllBrowsers(clientId) {
+        closeAllLiveBrowsers();
+    }
+    
     /**
      * Initializes the domain and registers commands.
      * @param {DomainManager} domainManager The DomainManager for the server
@@ -198,7 +201,7 @@
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
-		[]
+		    [],
             [{name: "pid",  // return value
                 type: "number",
                 description: "pid of the new browser process"}]
@@ -223,6 +226,16 @@
             "Closes the connection to a given client",
             [
                 {name: "id", type: "number", description: "id of connection to close"}
+            ],
+            []
+        );
+        domainManager.registerCommand(
+            "nodeSocketTransport",      // domain name
+            "closeAllBrowsers",         // command name
+            _cmdCloseAllBrowsers,       // command handler function
+            false,          // this command is synchronous in Node
+            "Closes the browsers",
+            [
             ],
             []
         );

@@ -499,9 +499,9 @@ define(function (require, exports, module) {
             }
         }
 
-        // TODO: don't have a way to close windows in the new architecture
-//        if (doCloseWindow) {
-//        }
+        if (doCloseWindow) {
+            _protocol.closeAllBrowsers();
+        }
        
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
@@ -675,7 +675,7 @@ define(function (require, exports, module) {
             prepareServerPromise
                 .done(function () {
                     _doLaunchAfterServerReady(doc);
-                    if(doc.file._path !== _getCurrentDocument().file.path) {
+                    if (doc.file._path !== _getCurrentDocument().file.path) {
                         _onDocumentChange();
                     }
                 })
@@ -700,7 +700,7 @@ define(function (require, exports, module) {
         var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
             isViewable = _server && _server.canServe(doc.file.fullPath);
         
-        if(_liveDocument.doc.url === docUrl) {  // if returning to the same document
+        if (_liveDocument.doc.url === docUrl) {  // if returning to the same document
             return;
         }
         if (isViewable) {
