@@ -567,7 +567,7 @@ define(function (require, exports, module) {
                 // TODO: timeout if we don't get a connection within a certain time
                 $(_liveDocument).one("connect", function (event, url) {
                     var doc = _getCurrentDocument();
-                    if (doc && url === _resolveUrl(doc.file.fullPath)) { //:SL This fails if the document is not the same as live document (i.e. something other than index.html is in editor)
+                    if ((doc && url === doc.url) || _relatedDocuments.hasOwnProperty(doc.url)) { // make sure it's current or one of the related docs
                         _setStatus(STATUS_ACTIVE);
                     }
                 });
@@ -670,6 +670,7 @@ define(function (require, exports, module) {
         if (_liveDocument.doc.url === docUrl) {  // if returning to the same document
             return;
         }
+        
         if (isViewable) {
             // Update status
             _setStatus(STATUS_CONNECTING);
@@ -711,6 +712,12 @@ define(function (require, exports, module) {
                 }
             });
         }
+        $(_liveDocument).one("connect", function (event, url) {
+            var doc = _getCurrentDocument();
+            if (doc && url === _resolveUrl(doc.file.fullPath)) {
+                _setStatus(STATUS_ACTIVE);
+            }
+        });
         
     }
 
