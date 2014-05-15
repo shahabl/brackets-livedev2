@@ -798,19 +798,19 @@ function RemoteFunctions(experimental) {
     
     function reloadCSS(url) {
         var i, links = document.getElementsByTagName('link');
-        if ( typeof reloadCSS.counter == 'undefined' ) { // used to make the link change each time
+        if (typeof reloadCSS.counter === 'undefined') { // used to make the link change each time
             reloadCSS.counter = 0;
         }
         reloadCSS.counter++;
         if (links.length) {
             for (i = 0; i < links.length; i++) {
                 var link = links[i];
-                if (link.href=== url || link.href.indexOf(url+"?count=")===0) {  // if the link starts with the url of the CSS file
+                if (link.href === url || link.href.indexOf(url + "?count=") === 0) {  // if the link starts with the url of the CSS file
                     // update the CSS
                     //console.log("CSS reloading: "+link.href);
                     
                     // a. for Firefox
-                    link.href=url+"?count="+reloadCSS.counter; // added string so firefox won't cache
+                    link.href = url + "?count=" + reloadCSS.counter; // added string so firefox won't cache
                     
                     // b. for Chrome
                     // The following looks redundant, but it's needed to make sure Chrome refreshes!
@@ -830,7 +830,7 @@ function RemoteFunctions(experimental) {
     }
     
     function loadPage(url) {
-        setTimeout(function() {window.location=url;}, 500);
+        setTimeout(function () {window.location = url; }, 500);
     }
 
     // init
