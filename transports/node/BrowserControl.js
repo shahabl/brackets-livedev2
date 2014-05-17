@@ -21,7 +21,7 @@
 
     "use strict";
 
-    var $           = require("jquery"),
+    var Q           = require("q"),
         spawn       = require("child_process").spawn,
         cpExec      = require("child_process").exec,
         util        = require("util"),
@@ -46,10 +46,17 @@
 
     // The following function is temp for testing, //:TODO: Set and get the appropriate folder
     function getApplicationSupportDirectory() {
-        return 'c:/TEMP';
+        if (process.platform === "win32") {
+            return 'c:/TEMP';
+        } else if (process.platform === "darwin") {
+            return '/Users/username/TEMP';  //:temp replace with your home folder path
+        } else if (process.platform === "linux") {
+            return '$/users/username/TEMP';
+        }
+        return null;
     }
     function _findAppByKeyMac(key) {
-        var deferred = $.Deferred();
+        var deferred = Q.defer();
         var macMdfindQuery = util.format(MAC_MDFIND_QUERY, key);
 
         cpExec(macMdfindQuery, null, function (error, stdout, stderr) {
@@ -79,7 +86,7 @@
                 }
             });
         });
-        return deferred.promise();
+        return deferred.promise;
     }
 
     function _openLiveBrowserLinux(url, callback) {
@@ -226,9 +233,13 @@
             if (i !== -1) {
                 liveBrowserOpenedPIDs.splice(i, 1);
             }
+          if (process.platform === "win32") {
             var args = ["/PID"];
             args.push(pid);
             spawn("taskkill", args);
+          } else {
+            process.kill(pid);
+          }
         }
         //:TODO: callback needed?
     }
