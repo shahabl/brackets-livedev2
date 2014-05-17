@@ -8,7 +8,7 @@ If you install the extension, you'll get a second lightning bolt on the toolbar 
 
 Lots:
 
-* There's a preliminary implementation (Chrome on Windows only) so closing live dev close the browser window. It needs to be completed and tested on Mac and Linux.
+* There's a preliminary implementation (Chrome on Mac and Windows only) so closing live dev close the browser window. It needs to be completed and tested on Linux.
 * Lightning bolt doesn't turn off when browser preview is closed. Haven't thought through how we should indicate in the UI when multiple browser clients are active, and whether we should turn the lightning bolt off when the last one disconnects - this might also change if we change the workflow to allow multiple files to be previewed
 * I wanted to change up how the Server stuff worked, but it turned out not to be necessary for the prototype and it might just be orthogonal.
 * No unit tests (the original Live Dev tests would need to be completely rewritten - and ideally in a more granular fashion with mocks)
