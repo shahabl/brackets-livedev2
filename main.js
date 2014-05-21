@@ -175,7 +175,7 @@ define(function main(require, exports, module) {
             // Update the checkmark next to 'Live Preview' menu item
             // Add checkmark when status is STATUS_ACTIVE; otherwise remove it
             CommandManager.get("livedev2.live-preview").setChecked(status === LiveDevelopment.STATUS_ACTIVE);
-            CommandManager.get("livedev2.live-preview").setEnabled(status === LiveDevelopment.STATUS_ACTIVE);
+            CommandManager.get("livedev2.live-highlight").setEnabled(status === LiveDevelopment.STATUS_ACTIVE);
         });
     }
 
