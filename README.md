@@ -83,7 +83,7 @@ TBD. My initial thinking for Brackets is that we would turn the lightning bolt i
 There's a need to track other related non-CSS documents (e.g. JS files) that are loaded by the current live HTML file; we do this because for those files, we want to reload the full page whenever the user saves those files. (See comments in LiveDevelopment._onDocumentSaved().) In the old Live Development, we did this by looking at a different CDT event that was sent out whenever the page was about to request a file. Again, I think we could just replace that with the same mechanism described above (having the server tell us what files were requested).
 
 We should consider changing the workflow to allow multiple files to be previewed (rather than only having a single preview that changes as you switch files in Brackets).
-In the future, if we allow multiple files to be previewed simultaneously, we would need to match requested files to the pages that loaded them. I think we could still do that on the Brackets server side by looking at the referrer. 
+In the future, if we allow multiple files to be previewed simultaneously, we would need to match requested files to the pages that loaded them. I think we could still do that on the Brackets server side by looking at the referrer.
 
 ### Changes from existing LiveDevelopment code
 
