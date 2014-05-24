@@ -108,6 +108,26 @@
     function getPathKey(path) {
         return PATH_KEY_PREFIX + normalizeRootPath(path);
     }
+
+    /**
+     * @private
+     * Generates a list of ips for this device
+     * @returns {string} list of ips
+     */
+    function _getIpList() {
+        var networkInterfaces = require('os').networkInterfaces();
+        var externalIPs = [];
+
+        for(var i in networkInterfaces) {
+            var currentInterface = networkInterfaces[i];
+            if(Array.isArray(currentInterface))
+                for(var j in currentInterface)
+                    if(currentInterface[j].family == 'IPv4' && !currentInterface[j].internal)
+                        externalIPs.push(currentInterface[j].address);
+        }
+
+        return JSON.stringify(externalIPs);
+    }
     
     /**
      * @private
@@ -117,7 +137,7 @@
      *    an error (or null if there was no error) and the server (or null if there
      *    was an error). 
      */
-    function _createServer(path, port, createCompleteCallback) {
+    function _createServer(path, ip, port, createCompleteCallback) {
         var server,
             app,
             address,
@@ -240,13 +260,13 @@
         // If the given port/address is in use then use a random port
         server.on("error", function (e) {
             if (e.code === "EADDRINUSE") {
-                server.listen(0, "127.0.0.1");
+                server.listen(0, ip);
             } else {
                 throw e;
             }
         });
 
-        server.listen(port, "127.0.0.1");
+        server.listen(port, ip);
     }
     
     /**
@@ -265,10 +285,15 @@
     function _cmdGetServer(path, port, cb) {
         // Make sure the key doesn't conflict with some built-in property of Object.
         var pathKey = getPathKey(path);
+        
+        var iplist = _getIpList();
+        //var ip = "127.0.0.1";     //:TODO: Add a flag to either use the found network ip, or use the localhost (to prevent access)
+        var ip = JSON.parse(iplist)[0]; //:TODO: Add a mechanism to find the relevant IP instead of the first one.  
+        //:TODO: Also save the IP and close/recreate the server if IP has changed.
         if (_servers[pathKey]) {
             cb(null, _servers[pathKey].address());
         } else {
-            _createServer(path, port, function (err, server) {
+            _createServer(path, ip, port, function (err, server) {
                 if (err) {
                     cb(err, null);
                 } else {

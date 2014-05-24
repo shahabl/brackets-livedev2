@@ -57,6 +57,7 @@ define(function (require, exports, module) {
     function StaticServer(config) {
         this._nodeDomain = config.nodeDomain;
         this._onRequestFilter = this._onRequestFilter.bind(this);
+        this._ip=null;
 
         BaseServer.call(this, config);
     }
@@ -133,7 +134,7 @@ define(function (require, exports, module) {
 
         this._nodeDomain.exec("getServer", self._root, port)
             .done(function (address) {
-
+                self._ip=address.address;
                 // If the port returned wasn't what was requested, then the preference has
                 // changed. Close the current server, and open a new one with the new port.
                 if (address.port !== port && port > 0) {
@@ -236,5 +237,9 @@ define(function (require, exports, module) {
         $(this._nodeDomain).off("requestFilter", this._onRequestFilter);
     };
 
+    StaticServer.prototype.getIP = function () {
+        return this._ip;
+    };
+    
     module.exports = StaticServer;
 });

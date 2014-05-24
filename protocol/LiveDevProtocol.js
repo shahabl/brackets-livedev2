@@ -189,6 +189,13 @@ define(function (require, exports, module) {
     function closeAllBrowsers(clientId) {
         _transport.closeAllBrowsers();
     }
+    /**
+     * Sets the server ip in the remote script. Proxies to the transport.
+     * @param {number} IP
+     */
+    function setIP(ip) {
+        _transport.setIP(ip);
+    }
     
     exports.setTransport = setTransport;
     exports.getRemoteScript = getRemoteScript;
@@ -196,4 +203,5 @@ define(function (require, exports, module) {
     exports.evaluate = evaluate;
     exports.close = close;
     exports.closeAllBrowsers = closeAllBrowsers;
+    exports.setIP = setIP;
 });
