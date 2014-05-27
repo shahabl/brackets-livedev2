@@ -18,8 +18,9 @@ Bugs/cleanup/TODO:
 * Doesn't show an error if the browser never connects back
 * Live highlight sometimes turns off temporarily; doesn't show highlight immediately when new browser connects
 * spurious errors when socket is closed
-* hard-coded port number for WebSocket server (might be fine)
-* Lots of TODOs in the code
+* hard-coded port number for WebSocket server (might be fine) (will it work for multiple instances of Brackets?)
+* See TODOs in StaticServerDomain in _cmdGetServer() reg enabling network access and setting the IP address.
+* Lots of other TODOs in the code
 
 ### Basic architecture
 
@@ -94,4 +95,5 @@ In the future, if we allow multiple files to be previewed simultaneously, we wou
 * HTMLInstrumentation and HTMLSimpleDOM were modified slightly (which is why they're copied into the extension), to make it possible to inject the remote scripts and to fix an issue with re-instrumenting the HTML when a second browser connects to Live Development. The former change is harmless; the latter change would need some review or possibly more work in order to merge into master. 
 * CSS live editing is enabled differently.  When a CSS file is selected in the editor, its url is sent down to the main live document and compared with all style sheets loaded with a link element, and reloads the CSS file if it's there. 
 * When switching files in the editor, a command is sent to the injected code in browser to load the new file after a set delay (currently 500 mS).
+* can do live preview on other devices connected to the same local network.
 * ignore the changes to main.js and the copied styles for now - those were just to make this work as an extension and avoid conflicting with the existing LiveDocument functionality

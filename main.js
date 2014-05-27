@@ -50,7 +50,15 @@ define(function main(require, exports, module) {
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
         Menus               = brackets.getModule("command/Menus"),
-        LiveDevelopment     = require("LiveDevelopment");
+        LiveDevelopment     = require("LiveDevelopment"),
+        // the following are used by the static server
+        FileUtils            = brackets.getModule("file/FileUtils"),
+        LiveDevServerManager = brackets.getModule("LiveDevelopment/LiveDevServerManager"),
+        BaseServer           = brackets.getModule("LiveDevelopment/Servers/BaseServer").BaseServer,
+        NodeDomain           = brackets.getModule("utils/NodeDomain"),
+        ProjectManager       = brackets.getModule("project/ProjectManager"),
+        StaticServer         = require("StaticServer/StaticServer");
+
 
     var params = new UrlParams();
 
@@ -187,9 +195,41 @@ define(function main(require, exports, module) {
         PreferencesManager.setViewState("livedev2.highlight", !PreferencesManager.getViewState("livedev2.highlight"));
     }
     
+    // static server
+    
+    /**
+     * @private
+     * @type {string} fullPath of the StaticServerDomain implementation
+     */
+    var _domainPath = ExtensionUtils.getModulePath(module, "StaticServer/node/StaticServerDomain");
+    
+    /**
+     * @private
+     * @type {NodeDomain}
+     */
+    var _nodeDomain = new NodeDomain("staticServer2", _domainPath);
+
+    /**
+     * @private
+     * @return {StaticServerProvider} The singleton StaticServerProvider initialized
+     * on app ready.
+     */
+    function _createStaticServer() {
+        var config = {
+            nodeDomain      : _nodeDomain,
+            pathResolver    : ProjectManager.makeProjectRelativeIfPossible,
+            root            : ProjectManager.getProjectRoot().fullPath
+        };
+        
+        return new StaticServer(config);
+    }
+    // static server to here
+    
     /** Initialize LiveDevelopment */
     AppInit.appReady(function () {
         params.parse();
+
+        LiveDevServerManager.registerServer({ create: _createStaticServer }, 6);  // priority set 1 higher than original static server
 
         LiveDevelopment.init();
         _setupGoLiveButton();
@@ -213,4 +253,9 @@ define(function main(require, exports, module) {
     Menus.getMenu(Menus.AppMenuBar.VIEW_MENU).addMenuItem("livedev2.live-highlight");
     
     ExtensionUtils.loadStyleSheet(module, "styles/styles.css");
+    
+    // TODO add the tests - For unit tests only
+    // exports._getStaticServerProvider = _createStaticServer;
+    // exports._nodeDomain = _nodeDomain;
+
 });

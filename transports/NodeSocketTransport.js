@@ -45,6 +45,8 @@ define(function (require, exports, module) {
     // TODO: randomize this?
     var SOCKET_PORT = 8123;
     
+    var ip="localhost";
+    
     /**
      * Returns the script that should be injected into the browser to handle the other end of the transport.
      * @return {string}
@@ -52,7 +54,7 @@ define(function (require, exports, module) {
     function getRemoteScript() {
         return "<script>\n" +
             NodeSocketTransportRemote +
-            "this._Brackets_LiveDev_Socket_Transport_URL = 'ws://localhost:" + SOCKET_PORT + "';\n" +
+            "this._Brackets_LiveDev_Socket_Transport_URL = 'ws://" + ip + ":" + SOCKET_PORT + "';\n" +
             "</script>\n";
     }
 
@@ -91,5 +93,10 @@ define(function (require, exports, module) {
             console.log("[NodeSocketTransport] failed to launch", err);
         });
     };
+    
+    exports.setIP = function (_ip) {
+        ip = _ip;
+    };
+    
 
 });

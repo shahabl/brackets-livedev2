@@ -201,7 +201,7 @@
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
-		    [],
+            [],
             [{name: "pid",  // return value
                 type: "number",
                 description: "pid of the new browser process"}]
@@ -235,8 +235,7 @@
             _cmdCloseAllBrowsers,       // command handler function
             false,          // this command is synchronous in Node
             "Closes the browsers",
-            [
-            ],
+            [],
             []
         );
         domainManager.registerEvent(

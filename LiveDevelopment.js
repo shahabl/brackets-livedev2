@@ -595,6 +595,9 @@ define(function (require, exports, module) {
     function _doLaunchAfterServerReady(initialDoc) {
         // update status
         _setStatus(STATUS_CONNECTING);
+        var ip = _server.getIP();
+        console.log(ip);
+        _protocol.setIP(ip);
         _createLiveDocumentForFrame(initialDoc);
 
         // start listening for requests
