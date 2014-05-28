@@ -349,7 +349,7 @@ define(function (require, exports, module) {
                 var liveDoc = _createLiveDocument(doc, null, _liveDocument._connections);
                 if (liveDoc) {
                     _server.add(liveDoc);
-                    _relatedDocuments[doc.file.fullPath] = liveDoc;
+                    _relatedDocuments[doc.url] = liveDoc;
 
                     $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
                 }
@@ -722,7 +722,7 @@ define(function (require, exports, module) {
                     var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);  // share connections with the CSS doc
                     if (liveDoc) {
                         _server.add(liveDoc);
-                        _relatedDocuments[doc.file.fullPath] = liveDoc;
+                        _relatedDocuments[doc.url] = liveDoc;
 
                         $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
                     }
