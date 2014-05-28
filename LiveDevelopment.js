@@ -328,7 +328,6 @@ define(function (require, exports, module) {
      * @param {$.Event} event
      * @param {string} url The URL of the stylesheet that was added.
      */
-     /* this funcion is not needed now
     function _styleSheetAdded(event, url) {
         var path = _server && _server.urlToPath(url),
             alreadyAdded = !!_relatedDocuments[url];
@@ -337,6 +336,7 @@ define(function (require, exports, module) {
         // Also, the stylesheet may already exist and be reported as added twice
         // due to Chrome reporting added/removed events after incremental changes
         // are pushed to the browser
+        console.log("styleSheetAdded: " + url);
         if (!path || alreadyAdded) {
             return;
         }
@@ -349,13 +349,13 @@ define(function (require, exports, module) {
                 var liveDoc = _createLiveDocument(doc, null, _liveDocument._connections);
                 if (liveDoc) {
                     _server.add(liveDoc);
-                    _relatedDocuments[doc.url] = liveDoc;
+                    _relatedDocuments[doc.file.fullPath] = liveDoc;
 
                     $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
                 }
             }
         });
-    } */
+    }
 
     /**
      * @private
@@ -609,6 +609,17 @@ define(function (require, exports, module) {
     
     /**
      * @private
+     * When a new doc is loaded by the server check and add it as a new live doc if needed
+     */
+    //:TODO: filter and add only if needed by main doc
+    function _onDocumentLoaded(event, pathname) {
+        var url = _server && _server.getBaseUrl().replace(/\/$/, "")+pathname;
+        console.log(pathname+ " loaded!!!");
+        _styleSheetAdded(null, url);
+    }
+    
+    /**
+     * @private
      * Create the server in preparation for opening a live preview.
      * @param {Document} doc The document we want the server for. Different servers handle
      * different types of project (a static server for when no app server is configured,
@@ -623,6 +634,9 @@ define(function (require, exports, module) {
         // Optionally prompt for a base URL if no server was found but the
         // file is a known server file extension
         showBaseUrlPrompt = !_server && FileUtils.isServerHtmlFileExt(doc.file.fullPath);
+        
+        // receive events from server whenever it loads a new document
+        $(_server).on("documentLoaded", _onDocumentLoaded);
 
         if (showBaseUrlPrompt) {
             // Prompt for a base URL
@@ -708,7 +722,7 @@ define(function (require, exports, module) {
                     var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);  // share connections with the CSS doc
                     if (liveDoc) {
                         _server.add(liveDoc);
-                        _relatedDocuments[doc.url] = liveDoc;
+                        _relatedDocuments[doc.file.fullPath] = liveDoc;
 
                         $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
                     }

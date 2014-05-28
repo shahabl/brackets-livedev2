@@ -171,6 +171,7 @@
             
             // ignore most HTTP methods and files that we're not watching
             if (("GET" !== req.method && "HEAD" !== req.method) || !hasListener) {
+                _domainManager.emitEvent("staticServer2", "fileLoaded", [location.pathname]);
                 return next();
             }
             
@@ -497,6 +498,15 @@
                 name: "location",
                 type: "{hostname: string, pathname: string, port: number, root: string: id: number}",
                 description: "request path"
+            }]
+        );
+        _domainManager.registerEvent(
+            "staticServer2",
+            "fileLoaded",
+            [{
+                name: "pathname",
+                type: "string",
+                description: "file path"
             }]
         );
     }
