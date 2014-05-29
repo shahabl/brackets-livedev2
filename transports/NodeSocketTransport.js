@@ -45,7 +45,7 @@ define(function (require, exports, module) {
     // TODO: randomize this?
     var SOCKET_PORT = 8123;
     
-    var ip="localhost";
+    var ip = "localhost";
     
     /**
      * Returns the script that should be injected into the browser to handle the other end of the transport.

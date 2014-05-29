@@ -346,7 +346,7 @@ define(function (require, exports, module) {
         docPromise.done(function (doc) {
             if ((_classForDocument(doc) === LiveCSSDocument) &&
                     (!_liveDocument || (doc !== _liveDocument.doc))) {
-                var liveDoc = _createLiveDocument(doc, null, _liveDocument._connections);
+                var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);
                 if (liveDoc) {
                     _server.add(liveDoc);
                     _relatedDocuments[doc.url] = liveDoc;
@@ -613,8 +613,8 @@ define(function (require, exports, module) {
      */
     //:TODO: filter and add only if needed by main doc
     function _onDocumentLoaded(event, pathname) {
-        var url = _server && _server.getBaseUrl().replace(/\/$/, "")+pathname;
-        console.log(pathname+ " loaded!!!");
+        var url = _server && _server.getBaseUrl().replace(/\/$/, "") + pathname;
+        console.log(pathname + " loaded!!!");
         _styleSheetAdded(null, url);
     }
     
