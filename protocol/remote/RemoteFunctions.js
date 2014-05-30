@@ -35,6 +35,7 @@ function RemoteFunctions(experimental) {
     "use strict";
 
     var lastKeepAliveTime = Date.now();
+    var reloadCSSCounter = 0;
     
     /**
      * @type {DOMEditHandler}
@@ -798,10 +799,7 @@ function RemoteFunctions(experimental) {
     
     function reloadCSS(url) {
         var i, links = document.getElementsByTagName('link');
-        if (typeof reloadCSS.counter === 'undefined') { // used to make the link change each time
-            reloadCSS.counter = 0;
-        }
-        reloadCSS.counter++;
+        reloadCSSCounter++;
         if (links.length) {
             for (i = 0; i < links.length; i++) {
                 var link = links[i];
@@ -810,13 +808,30 @@ function RemoteFunctions(experimental) {
                     //console.log("CSS reloading: "+link.href);
                     
                     // a. for Firefox
-                    link.href = url + "?count=" + reloadCSS.counter; // added string so firefox won't cache
+                    link.href = url + "?count=" + reloadCSSCounter; // added string so firefox won't cache
                     
+                    //:TODO: Add browser check and do the following only for Chrome (also test with other browsers)
                     // b. for Chrome
-                    // The following looks redundant, but it's needed to make sure Chrome refreshes!
+                    // The following is needed so Chrome refreshes!
+                    // The side effect of this is that it flickers since it removes the element first
+                    
                     var parent = link.parentNode;
+                    var next = link.nextSibling;
+                    parent.removeChild(link);   // also tried link.disabled = true;
+                    parent.insertBefore(link, next);
+                    
+                    //:TODO: Try to see if there's a way to get it to work on Chrome without flickering
+                    // tried the following, but it either still flickers in Chrome, or does not refresh the page until you move
+                    // the mouse over the browser window.
+                    /*
+                    var parent = link.parentNode;
+                    var link2 = document.createElement("link");
+                    link2.rel = link.rel;
+                    link2.href = link.href;
+                    link2.setAttribute('data-brackets-id', link.getAttribute('data-brackets-id'));
+                    parent.insertBefore(link2, link.nextSibling);
                     parent.removeChild(link);
-                    parent.appendChild(link);
+                    */
                     break;
                 }
             }
