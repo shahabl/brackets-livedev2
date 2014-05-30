@@ -700,34 +700,9 @@ define(function (require, exports, module) {
             // create new live doc
             _createLiveDocumentForFrame(doc);
 
-            //: No need to open();
         } else {
-        
-            var path = doc.file.fullPath,
-                alreadyAdded = !!_relatedDocuments[path];
-
-            // path may be null if loading an external stylesheet.
-            // Also, the stylesheet may already exist and be reported as added twice
-            // due to Chrome reporting added/removed events after incremental changes
-            // are pushed to the browser
-            if (!path || alreadyAdded) {
-                return;
-            }
-
-            var docPromise = DocumentManager.getDocumentForPath(path);
-
-            docPromise.done(function (doc) {
-                if ((_classForDocument(doc) === LiveCSSDocument) &&
-                        (!_liveDocument || (doc !== _liveDocument.doc))) {
-                    var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);  // share connections with the CSS doc
-                    if (liveDoc) {
-                        _server.add(liveDoc);
-                        _relatedDocuments[doc.url] = liveDoc;
-
-                        $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
-                    }
-                }
-            });
+            // If there's anything that needs to be done when switching to a different doc type (e.g. CSS)
+            // the code can be put here.
         }
         $(_liveDocument).one("connect", function (event, url) {
             var doc = _getCurrentDocument();
