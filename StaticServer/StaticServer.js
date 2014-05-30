@@ -57,6 +57,7 @@ define(function (require, exports, module) {
     function StaticServer(config) {
         this._nodeDomain = config.nodeDomain;
         this._onRequestFilter = this._onRequestFilter.bind(this);
+        this._onFileLoaded = this._onFileLoaded.bind(this);
         this._ip=null;
 
         BaseServer.call(this, config);
@@ -222,11 +223,21 @@ define(function (require, exports, module) {
     };
     
     /**
+     * @private
+     * Event handler for StaticServerDomain docLoaded event
+     */
+    StaticServer.prototype._onFileLoaded = function (event, path) {
+        console.log("static server emitting event: "+path);
+        $(this).triggerHandler("documentLoaded", [path]);
+    };
+    
+    /**
      * See BaseServer#start. Starts listenting to StaticServerDomain events.
      */
     StaticServer.prototype.start = function () {
         console.log("Static Server started!");
         $(this._nodeDomain).on("requestFilter", this._onRequestFilter);
+        $(this._nodeDomain).on("fileLoaded", this._onFileLoaded);
     };
 
     /**

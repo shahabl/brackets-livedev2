@@ -189,7 +189,7 @@ define(function (require, exports, module) {
     LiveDocument.prototype._onConnect = function (event, clientId, url) {
         if (url === this.urlResolver(this.doc.file.fullPath)) {
             this.connections[clientId] = true;
-            $(this).triggerHandler("connect", [url]);
+            $(this).triggerHandler("connect", [url]); //: Check if this is needed
         }
     };
     
