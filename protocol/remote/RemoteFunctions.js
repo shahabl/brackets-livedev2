@@ -36,6 +36,7 @@ function RemoteFunctions(experimental) {
 
     var lastKeepAliveTime = Date.now();
     var reloadCSSCounter = 0;
+    var loadPageTimeoutId = 0;
     
     /**
      * @type {DOMEditHandler}
@@ -798,41 +799,60 @@ function RemoteFunctions(experimental) {
     }
     
     function reloadCSS(url) {
-        var i, links = document.getElementsByTagName('link');
+        var i, links = document.getElementsByTagName('link'), link, found = false;
         reloadCSSCounter++;
+        
+        function updateCSS(url, link) {
+            //console.log("CSS reloading: "+link.href);
+
+            // a. for Firefox
+            link.href = url + "?count=" + reloadCSSCounter; // added string so firefox won't cache
+
+            //:TODO: Add browser check and do the following only for Chrome (also test with other browsers)
+            // b. for Chrome
+            // The following is needed so Chrome refreshes!
+            // The side effect of this is that it flickers since it removes the element first
+
+            var parent = link.parentNode;
+            var next = link.nextSibling;
+            parent.removeChild(link);   // also tried link.disabled = true;
+            parent.insertBefore(link, next);
+
+            //:TODO: Try to see if there's a way to get it to work on Chrome without flickering
+            // tried the following, but it either still flickers in Chrome, or does not refresh the page until you move
+            // the mouse over the browser window.
+            /*
+            var parent = link.parentNode;
+            var link2 = document.createElement("link");
+            link2.rel = link.rel;
+            link2.href = link.href;
+            link2.setAttribute('data-brackets-id', link.getAttribute('data-brackets-id'));
+            parent.insertBefore(link2, link.nextSibling);
+            parent.removeChild(link);
+            */
+        }
+        
         if (links.length) {
             for (i = 0; i < links.length; i++) {
-                var link = links[i];
+                link = links[i];
                 if (link.href === url || link.href.indexOf(url + "?count=") === 0) {  // if the link starts with the url of the CSS file
                     // update the CSS
-                    //console.log("CSS reloading: "+link.href);
-                    
-                    // a. for Firefox
-                    link.href = url + "?count=" + reloadCSSCounter; // added string so firefox won't cache
-                    
-                    //:TODO: Add browser check and do the following only for Chrome (also test with other browsers)
-                    // b. for Chrome
-                    // The following is needed so Chrome refreshes!
-                    // The side effect of this is that it flickers since it removes the element first
-                    
-                    var parent = link.parentNode;
-                    var next = link.nextSibling;
-                    parent.removeChild(link);   // also tried link.disabled = true;
-                    parent.insertBefore(link, next);
-                    
-                    //:TODO: Try to see if there's a way to get it to work on Chrome without flickering
-                    // tried the following, but it either still flickers in Chrome, or does not refresh the page until you move
-                    // the mouse over the browser window.
-                    /*
-                    var parent = link.parentNode;
-                    var link2 = document.createElement("link");
-                    link2.rel = link.rel;
-                    link2.href = link.href;
-                    link2.setAttribute('data-brackets-id', link.getAttribute('data-brackets-id'));
-                    parent.insertBefore(link2, link.nextSibling);
-                    parent.removeChild(link);
-                    */
+                    updateCSS(url, link);
+                    found = true;
                     break;
+                }
+            }
+            if (!found) { // Did not find the url in any of the linked files
+                // Assume the file is loaded through @import
+                // Since we don't know which one, reload all of them
+                // This is kind of a hack to support @import for now
+                //:TODO: Search linked files "recursively" to find the actual one
+                // Note: This works in Chrome, but not in Firefox since FF caches the imported files
+                //:TODO: To make in work for FF, need to parse the CSS files and add a query to the imports
+                // for example change @import url(a.css) to @import url(a.css?count=xyz)
+                for (i = 0; i < links.length; i++) {
+                    link = links[i];
+                    updateCSS(link.href.substring(0, link.href.indexOf("?count=")), link);
                 }
             }
         }
@@ -845,7 +865,17 @@ function RemoteFunctions(experimental) {
     }
     
     function loadPage(url) {
-        setTimeout(function () {window.location = url; }, 500);
+        
+        // first check and clear if the previous timer is still waiting
+        //:TODO: More work needs to be done to handle the ws connections properly in the case that user quickly 
+        // switches docs before each is loaded and connected.
+        if (loadPageTimeoutId) {
+            clearTimeout(loadPageTimeoutId);
+        }
+        loadPageTimeoutId = setTimeout(function () {
+            //console.log("loading: " + url);
+            window.location = url;
+        }, 500);
     }
 
     // init

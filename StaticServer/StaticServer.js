@@ -58,7 +58,7 @@ define(function (require, exports, module) {
         this._nodeDomain = config.nodeDomain;
         this._onRequestFilter = this._onRequestFilter.bind(this);
         this._onFileLoaded = this._onFileLoaded.bind(this);
-        this._ip=null;
+        this._ip = null;
 
         BaseServer.call(this, config);
     }
@@ -135,7 +135,7 @@ define(function (require, exports, module) {
 
         this._nodeDomain.exec("getServer", self._root, port)
             .done(function (address) {
-                self._ip=address.address;
+                self._ip = address.address;
                 // If the port returned wasn't what was requested, then the preference has
                 // changed. Close the current server, and open a new one with the new port.
                 if (address.port !== port && port > 0) {
@@ -194,7 +194,7 @@ define(function (require, exports, module) {
      * Send HTTP response data back to the StaticServerSomain
      */
     StaticServer.prototype._send = function (location, response) {
-        console.log("Sending response for: " +location.pathname+" id: "+response.id+"=================");
+        console.log("Sending response for: " + location.pathname + " id: " + response.id + "=================");
         this._nodeDomain.exec("writeFilteredResponse", location.root, location.pathname, response);
     };
     
@@ -209,7 +209,7 @@ define(function (require, exports, module) {
             liveDocument    = this._liveDocuments[key],
             response;
         
-        console.log("Sending response to request id: "+request.id); //:
+        console.log("Sending response to request id: " + request.id); //:
         
         // send instrumented response or null to fallback to static file
         if (liveDocument && liveDocument.getResponseData) {
@@ -227,7 +227,7 @@ define(function (require, exports, module) {
      * Event handler for StaticServerDomain docLoaded event
      */
     StaticServer.prototype._onFileLoaded = function (event, path) {
-        console.log("static server emitting event: "+path);
+        console.log("static server emitting event: " + path);
         $(this).triggerHandler("documentLoaded", [path]);
     };
     
