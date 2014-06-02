@@ -700,10 +700,10 @@ define(function (require, exports, module) {
             // create new live doc
             _createLiveDocumentForFrame(doc);
 
-        } else {
+        }/* else {
             // If there's anything that needs to be done when switching to a different doc type (e.g. CSS)
             // the code can be put here.
-        }
+        }*/
         $(_liveDocument).one("connect", function (event, url) {
             var doc = _getCurrentDocument();
             if (doc && url === _resolveUrl(doc.file.fullPath)) {

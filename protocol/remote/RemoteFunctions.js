@@ -798,10 +798,10 @@ function RemoteFunctions(experimental) {
     }
     
     function reloadCSS(url) {
-        var i, links = document.getElementsByTagName('link'), link, found=false;
+        var i, links = document.getElementsByTagName('link'), link, found = false;
         reloadCSSCounter++;
         
-        function updateCSS (url, link) {
+        function updateCSS(url, link) {
             //console.log("CSS reloading: "+link.href);
 
             // a. for Firefox
@@ -837,11 +837,11 @@ function RemoteFunctions(experimental) {
                 if (link.href === url || link.href.indexOf(url + "?count=") === 0) {  // if the link starts with the url of the CSS file
                     // update the CSS
                     updateCSS(url, link);
-                    found=true;
+                    found = true;
                     break;
                 }
             }
-            if(!found) { // Did not find the url in any of the linked files
+            if (!found) { // Did not find the url in any of the linked files
                 // Assume the file is loaded through @import
                 // Since we don't know which one, reload all of them
                 // This is kind of a hack to support @import for now
