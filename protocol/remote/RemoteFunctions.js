@@ -36,6 +36,7 @@ function RemoteFunctions(experimental) {
 
     var lastKeepAliveTime = Date.now();
     var reloadCSSCounter = 0;
+    var loadPageTimeoutId = 0;
     
     /**
      * @type {DOMEditHandler}
@@ -864,7 +865,17 @@ function RemoteFunctions(experimental) {
     }
     
     function loadPage(url) {
-        setTimeout(function () {window.location = url; }, 500);
+        
+        // first check and clear if the previous timer is still waiting
+        //:TODO: More work needs to be done to handle the ws connections properly in the case that user quickly 
+        // switches docs before each is loaded and connected.
+        if (loadPageTimeoutId) {
+            clearTimeout(loadPageTimeoutId);
+        }
+        loadPageTimeoutId = setTimeout(function () {
+            //console.log("loading: " + url);
+            window.location = url;
+        }, 500);
     }
 
     // init
