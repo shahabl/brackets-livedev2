@@ -668,39 +668,6 @@ define(function (require, exports, module) {
         
         return deferred.promise();
     }
-
-    /**
-     * Open a live preview on the current docuemnt.
-     */
-    function open() {
-        // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
-        // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
-        _getInitialDocFromCurrent().done(function (doc) {
-            var prepareServerPromise = (doc && _prepareServer(doc)) || new $.Deferred().reject(),
-                otherDocumentsInWorkingFiles;
-
-            if (doc && !doc._masterEditor) {
-                otherDocumentsInWorkingFiles = DocumentManager.getWorkingSet().length;
-                DocumentManager.addToWorkingSet(doc.file);
-
-                if (!otherDocumentsInWorkingFiles) {
-                    DocumentManager.setCurrentDocument(doc);
-                }
-            }
-
-            // wait for server (StaticServer, Base URL or file:)
-            prepareServerPromise
-                .done(function () {
-                    _doLaunchAfterServerReady(doc);
-                    if(doc.file._path !== _getCurrentDocument().file.path) {
-                        _onDocumentChange();
-                    }
-                })
-                .fail(function () {
-                    _showWrongDocError();
-                });
-        });
-    }
     
     /**
      * @private
@@ -717,7 +684,7 @@ define(function (require, exports, module) {
         var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
             isViewable = _server && _server.canServe(doc.file.fullPath);
         
-        if(_liveDocument.doc.url === docUrl) {  // if returning to the same document
+        if (_liveDocument.doc.url === docUrl) {  // if returning to the same document
             return;
         }
         if (isViewable) {
@@ -743,6 +710,39 @@ define(function (require, exports, module) {
             }
         });
         
+    }
+
+    /**
+     * Open a live preview on the current docuemnt.
+     */
+    function open() {
+        // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
+        // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
+        _getInitialDocFromCurrent().done(function (doc) {
+            var prepareServerPromise = (doc && _prepareServer(doc)) || new $.Deferred().reject(),
+                otherDocumentsInWorkingFiles;
+
+            if (doc && !doc._masterEditor) {
+                otherDocumentsInWorkingFiles = DocumentManager.getWorkingSet().length;
+                DocumentManager.addToWorkingSet(doc.file);
+
+                if (!otherDocumentsInWorkingFiles) {
+                    DocumentManager.setCurrentDocument(doc);
+                }
+            }
+
+            // wait for server (StaticServer, Base URL or file:)
+            prepareServerPromise
+                .done(function () {
+                    _doLaunchAfterServerReady(doc);
+                    if (doc.file._path !== _getCurrentDocument().file.path) {
+                        _onDocumentChange();
+                    }
+                })
+                .fail(function () {
+                    _showWrongDocError();
+                });
+        });
     }
 
     /**
