@@ -27,10 +27,8 @@
     "use strict";
     
     var WebSocketServer = require("ws").Server,
-        _ = require("lodash"),
-        BrowserControl = require("./BrowserControl"),
-        openLiveBrowser = BrowserControl.openLiveBrowser,
-        closeAllLiveBrowsers = BrowserControl.closeAllLiveBrowsers;
+        open = require("open"),
+        _ = require("lodash");
     
     /**
      * @private
@@ -141,11 +139,10 @@
     /**
      * Initializes the socket server, then launches the given URL in the system default browser.
      * @param {string} url
-     * @return {number} pid of the new browser process
      */
-    function _cmdLaunch(url, callback) {
-        _createServer();  //:TODO: Need to check for error here?
-        openLiveBrowser(url, callback);
+    function _cmdLaunch(url) {
+        _createServer();
+        open(url);
     }
     
     /**
@@ -179,10 +176,6 @@
         }
     }
     
-    function _cmdCloseAllBrowsers(clientId) {
-        closeAllLiveBrowsers();
-    }
-    
     /**
      * Initializes the domain and registers commands.
      * @param {DomainManager} domainManager The DomainManager for the server
@@ -196,15 +189,12 @@
             "nodeSocketTransport",      // domain name
             "launch",       // command name
             _cmdLaunch,     // command handler function
-            true,          // this command is asynchronous in Node
+            false,          // this command is synchronous in Node
             "Launches a given HTML file in the browser for live development",
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
-            [],
-            [{name: "pid",  // return value
-                type: "number",
-                description: "pid of the new browser process"}]
+            []
         );
         domainManager.registerCommand(
             "nodeSocketTransport",      // domain name
@@ -227,15 +217,6 @@
             [
                 {name: "id", type: "number", description: "id of connection to close"}
             ],
-            []
-        );
-        domainManager.registerCommand(
-            "nodeSocketTransport",      // domain name
-            "closeAllBrowsers",         // command name
-            _cmdCloseAllBrowsers,       // command handler function
-            false,          // this command is synchronous in Node
-            "Closes the browsers",
-            [],
             []
         );
         domainManager.registerEvent(

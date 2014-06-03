@@ -2,13 +2,13 @@ This is an experimental repo for prototyping how we might replace the current li
 
 ### What's working
 
-If you install the extension, you'll get a second lightning bolt on the toolbar (below the Extension Manager icon). You can open an HTML page (I've only tried the Getting Started page) and then click that second lightning bolt to enter HTML live development using the extension. This will launch the page in your browser. You should then also be able to copy and paste the URL from that browser into any other browser (I tried Firefox and Safari) - live edits will then update all connected browsers at once.
+If you install the extension, you'll get a second lightning bolt on the toolbar (below the Extension Manager icon). You can open an HTML page (I've only tried the Getting Started page) and then click that second lightning bolt to enter HTML live development using the extension. This will launch the page in your default browser. You should then also be able to copy and paste the URL from that browser into any other browser (I tried Firefox and Safari) - live edits will then update all connected browsers at once.
 
 ### What's not working
 
 Lots:
 
-* There's a preliminary implementation (Chrome on Mac and Windows only) so closing live dev close the browser window. It needs to be completed and tested on Linux.
+* Closing live dev doesn't close the window in the browser.
 * Lightning bolt doesn't turn off when browser preview is closed. Haven't thought through how we should indicate in the UI when multiple browser clients are active, and whether we should turn the lightning bolt off when the last one disconnects - this might also change if we change the workflow to allow multiple files to be previewed
 * I wanted to change up how the Server stuff worked, but it turned out not to be necessary for the prototype and it might just be orthogonal.
 * No unit tests (the original Live Dev tests would need to be completely rewritten - and ideally in a more granular fashion with mocks)
@@ -56,7 +56,7 @@ Here's a short summary of what happens when the user clicks on the Live Preview 
 
 1. LiveDevelopment creates a LiveHTMLDocument for the page, passing it the protocol handler (LiveDevProtocol). LiveHTMLDocument manages communication between the editor and the browser for HTML pages.
 2. LiveDevelopment tells StaticServer that this path has a live document. StaticServer is in charge of actually serving the page and associated assets to the browser. (Note: eventually I think we should get rid of this step - StaticServer shouldn't know anything about live documents directly; it should just have a way of request instrumented text for HTML URLs.)
-3. LiveDevelopment tells the protocol to open the page via the StaticServer URL. The protocol just passes this through to the transport (NodeSocketTransport), which first creates a WebSocket server if it hasn't already, then opens the page in a browser.
+3. LiveDevelopment tells the protocol to open the page via the StaticServer URL. The protocol just passes this through to the transport (NodeSocketTransport), which first creates a WebSocket server if it hasn't already, then opens the page in the default browser.
 4. The browser requests the page from StaticServer. StaticServer notes that there is a live document for this page, and requests an instrumented version of the page from LiveHTMLDocument. (The current "requestFilterPaths" mechanism for this could be simplified, I think.)
 5. LiveHTMLDocument instruments the page for live editing using the existing HTMLInstrumentation mechanism, and additionally includes remote scripts provided by the protocol (LiveDevProtocolRemote) and transport (NodeSocketTransportRemote). (The transport script includes the URL for the WebSocket server created in step 3.)
 6. The instrumented page is sent back to StaticServer, which responds to the browser with the instrumented version. Other files requested by the browser are simply returned directly by StaticServer.

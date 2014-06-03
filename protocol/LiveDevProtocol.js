@@ -184,24 +184,16 @@ define(function (require, exports, module) {
     }
     
     /**
-     * Closes all browser Windows.  Proxies to the transport.
-     */
-    function closeAllBrowsers(clientId) {
-        _transport.closeAllBrowsers();
-    }
-    /**
      * Sets the server ip in the remote script. Proxies to the transport.
      * @param {number} IP
      */
     function setIP(ip) {
         _transport.setIP(ip);
     }
-    
     exports.setTransport = setTransport;
     exports.getRemoteScript = getRemoteScript;
     exports.launch = launch;
     exports.evaluate = evaluate;
     exports.close = close;
-    exports.closeAllBrowsers = closeAllBrowsers;
     exports.setIP = setIP;
 });
