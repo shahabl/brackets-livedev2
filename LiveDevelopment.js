@@ -570,18 +570,6 @@ define(function (require, exports, module) {
                     if (doc && url === _resolveUrl(doc.file.fullPath)) {
                         _setStatus(STATUS_ACTIVE);
                     }
-                    //:TODO - A delay introduced here since sometimes the related docs are not loaded yet at connect
-                    // This is a temp solution.
-                    setTimeout(function () {
-                        var getRelatedPromise;
-                        getRelatedPromise = _liveDocument.getRelated();
-                        getRelatedPromise.done(function (relatedDocs) {
-                            var docs = Object.keys(relatedDocs.stylesheets);
-                            docs.forEach(function (url) {
-                                _styleSheetAdded(null, url);
-                            });
-                        });
-                    }, 500);
                 });
             } else {
                 console.error("LiveDevelopment._open(): No server active");
@@ -679,9 +667,15 @@ define(function (require, exports, module) {
         var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
             isViewable = _server && _server.canServe(doc.file.fullPath);
         
-        if (isViewable) {
+        //if  {  // if returning to the same document
+            //return;
+        //}
+        
+        if ((_liveDocument.doc.url !== docUrl) && isViewable) {
             // Update status
             _setStatus(STATUS_CONNECTING);
+            
+            _protocol.evaluate(_liveDocument.getConnectionIds(), "_LD.loadPage(" + JSON.stringify(docUrl) + ")");
 
             // clear live doc and related docs
             _closeDocuments();
@@ -689,13 +683,27 @@ define(function (require, exports, module) {
             // create new live doc
             _createLiveDocumentForFrame(doc);
 
-            open();
-        }
+        }/* else {
+            // If there's anything that needs to be done when switching to a different doc type (e.g. CSS)
+            // the code can be put here.
+        }*/
         $(_liveDocument).one("connect", function (event, url) {
             var doc = _getCurrentDocument();
             if (doc && url === _resolveUrl(doc.file.fullPath)) {
                 _setStatus(STATUS_ACTIVE);
             }
+            //:TODO - A delay introduced here since sometimes the related docs are not loaded yet at connect
+            // This is a temp solution.
+            setTimeout(function () {
+                var getRelatedPromise;
+                getRelatedPromise = _liveDocument.getRelated();
+                getRelatedPromise.done(function (relatedDocs) {
+                    var docs = Object.keys(relatedDocs.stylesheets);
+                    docs.forEach(function (url) {
+                        _styleSheetAdded(null, url);
+                    });
+                });
+            }, 500);
         });
     }
 
@@ -722,6 +730,9 @@ define(function (require, exports, module) {
             prepareServerPromise
                 .done(function () {
                     _doLaunchAfterServerReady(doc);
+                    if (doc.file._path !== _getCurrentDocument().file.path) {
+                        _onDocumentChange();
+                    }
                 })
                 .fail(function () {
                     _showWrongDocError();
