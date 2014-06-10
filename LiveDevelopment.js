@@ -667,10 +667,6 @@ define(function (require, exports, module) {
         var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
             isViewable = _server && _server.canServe(doc.file.fullPath);
         
-        //if  {  // if returning to the same document
-            //return;
-        //}
-        
         if ((_liveDocument.doc.url !== docUrl) && isViewable) {
             // Update status
             _setStatus(STATUS_CONNECTING);
