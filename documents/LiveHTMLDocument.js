@@ -319,6 +319,11 @@ define(function (require, exports, module) {
     LiveHTMLDocument.prototype.isRelated = function (fullPath) {
         return (this._relatedDocuments.scripts[this.urlResolver(fullPath)] || this._relatedDocuments.stylesheets[this.urlResolver(fullPath)]);
     };
+    
+    
+    LiveHTMLDocument.prototype.reload = function () {
+        this.protocol.evaluate(this.parentClass.getConnectionIds.call(this), "document.location.reload()");
+    };
 
     // Export the class
     module.exports = LiveHTMLDocument;

@@ -742,8 +742,9 @@ define(function (require, exports, module) {
         // served with their associated main documents, probably via the referrer.)
         
         if (_liveDocument.isRelated(absolutePath)) {
-            //do something
-            console.log("related document saved");
+            if (doc.getLanguage().getId() === "javascript") {
+                _liveDocument.reload();
+            }
         }
     }
 
