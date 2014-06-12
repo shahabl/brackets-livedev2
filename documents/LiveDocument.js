@@ -95,19 +95,23 @@ define(function (require, exports, module) {
      * Closes the live document, terminating its connection to the browser.
      */
     LiveDocument.prototype.close = function () {
-        var self = this;
-        this.getConnectionIds().forEach(function (clientId) {
-            self.protocol.close(clientId);
-        });
-        this.connections = {};
-        $(this.protocol)
-            .off("connect", this._onConnect)
-            .off("close", this._onClose);
-        this._clearErrorDisplay();
-        this._detachFromEditor();
-        $(EditorManager).off("activeEditorChange", this._onActiveEditorChange);
-        PreferencesManager.stateManager.getPreference("livedev2.highlight")
-            .off("change", this._onHighlightPrefChange);
+        //TODO: temporarily disabling this since it prevents reloading the page after JS changes,
+        //need to review it when implementing life cycle.
+        
+//        var self = this;
+//        this.getConnectionIds().forEach(function (clientId) {
+//            self.protocol.close(clientId);
+//        });
+//        this.connections = {};
+//        $(this.protocol)
+//            .off("connect", this._onConnect)
+//            .off("close", this._onClose);
+//        this._clearErrorDisplay();
+//        this._detachFromEditor();
+//        $(EditorManager).off("activeEditorChange", this._onActiveEditorChange);
+//        PreferencesManager.stateManager.getPreference("livedev2.highlight")
+//            .off("change", this._onHighlightPrefChange);
+//        
     };
     
     /**
@@ -171,7 +175,8 @@ define(function (require, exports, module) {
      * @param {?Editor} oldActive
      */
     LiveDocument.prototype._onActiveEditorChange = function (event, newActive, oldActive) {
-        this._detachFromEditor();
+        //TODO: temporarily disabling this since it prevents reloading the page after JS changes. 
+//      this._detachFromEditor();
         
         if (newActive && newActive.document === this.doc) {
             this._attachToEditor(newActive);
