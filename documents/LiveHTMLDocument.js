@@ -40,7 +40,9 @@ define(function (require, exports, module) {
         StringUtils         = brackets.getModule("utils/StringUtils"),
         _                   = brackets.getModule("thirdparty/lodash"),
         LiveDocument        = require("documents/LiveDocument"),
-        HTMLInstrumentation = require("language/HTMLInstrumentation");
+        HTMLInstrumentation = require("language/HTMLInstrumentation"),
+        AddedRemoteFunctions = require("text!protocol/remote/ExtendedRemoteFunctions.js");
+
 
     /**
      * @constructor
@@ -91,7 +93,7 @@ define(function (require, exports, module) {
             // injection is completed
             brackets.getModule(["text!LiveDevelopment/Agents/RemoteFunctions.js"], function (RemoteFunctions) {
                 // Inject our remote functions into the browser.
-                var command = "window._LD=" + RemoteFunctions + "();";
+                var command = "window._LD=" + AddedRemoteFunctions + "(" + RemoteFunctions + "())";
                 // TODO: handle error, wasThrown?
                 self.protocol.evaluate([clientId], command);
             });
@@ -282,6 +284,7 @@ define(function (require, exports, module) {
         }
     };
     
+    
     /**
      * @private
      * Handles message received from the browser.
@@ -291,6 +294,7 @@ define(function (require, exports, module) {
      * TODO: we should have a better extensible way to register handlers for different message types (subscribe?).
      */
     LiveHTMLDocument.prototype._onMessage = function (event, clientId, msg) {
+        
         switch (msg.type) {
         case "Document.Related":
             this._relatedDocuments = msg.related;
@@ -320,6 +324,9 @@ define(function (require, exports, module) {
         return (this._relatedDocuments.scripts[this.urlResolver(fullPath)] || this._relatedDocuments.stylesheets[this.urlResolver(fullPath)]);
     };
 
+    LiveHTMLDocument.prototype.getRelated = function () {
+        return this._relatedDocuments;
+    };
     // Export the class
     module.exports = LiveHTMLDocument;
 });

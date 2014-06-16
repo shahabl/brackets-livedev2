@@ -56,11 +56,11 @@
         
         /*  Retrieves related documents (external CSS and JS files) */
         related: function () {
-            var i, j;
             var related = {
                 scripts: {},
                 stylesheets: {}
             };
+            var i;
             //iterate on document scripts (HTMLCollection doesn't provide forEach iterator).
             for (i = 0; i < document.scripts.length; i++) {
                 //add only external scripts
@@ -68,25 +68,28 @@
                     related.scripts[document.scripts[i].src] = true;
                 }
             }
-            //iterate on document.stylesheets (StyleSheetList doesn't provide forEach iterator).
-            for (i = 0; i < document.styleSheets.length; i++) {
-                var s = document.styleSheets[i];
-                if (s.href) {
-                    related.stylesheets[s.href] = true;
-                }
-                //extract @imports.
-                var imports = this._scanImports(s);
-                
-                for (j = 0; j < imports.length; j++) {
-                    // add @imports to related 
-                    related.stylesheets[imports[j]] = true;
-                    // add @imports to this._imports 
-                    // need to keep them for notifying changes.
-                    if (!this._imports[s.href]) {
-                        this._imports[s.href] = [];
+          
+            var s, j;
+            //traverse @import rules
+            var traverseRules = function _traverseRules(sheet, base) {
+                var i;
+                if (sheet.href && sheet.cssRules) {
+                    if (related.stylesheets[sheet.href] === undefined) {
+                        related.stylesheets[sheet.href] = [];
                     }
-                    this._imports[s.href].push(imports[j]);
+                    related.stylesheets[sheet.href].push(base);
+                    //console.log("rule in: " + sheet.href + ", base: " + base);
+                    for (i = 0; i < sheet.cssRules.length; i++) {
+                        if (sheet.cssRules[i].href) {
+                            traverseRules(sheet.cssRules[i].styleSheet, base);
+                        }
+                    }
                 }
+            };
+            //iterate on document.stylesheets (StyleSheetList doesn't provide forEach iterator).
+            for (j = 0; j < document.styleSheets.length; j++) {
+                s = document.styleSheets[j];
+                traverseRules(s, s.href);
             }
             return related;
         },
@@ -133,7 +136,7 @@
                 imports = [];
             for (i = 0; i < styleSheet.cssRules.length; i++) {
                 if (styleSheet.cssRules[i].href) {
-                    imports.push(styleSheet.cssRules[i].styleSheet.href);
+                    imports.push(styleSheet.cssRules[i].styleSheet);
                 }
             }
             return imports;
@@ -167,7 +170,7 @@
         
         stop: function () {}
     };
-    
+
     /**
      * The remote handler for the protocol.
      */
@@ -219,6 +222,7 @@
     }
     
     transport.setCallbacks(ProtocolHandler);
+    
     
     window.addEventListener('load', function () {
         DocumentObserver.start();
