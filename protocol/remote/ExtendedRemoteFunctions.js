@@ -58,5 +58,21 @@ function ExtendRemoteFunctions(obj) {
         }
         s.id = url;
     };
+    
+    ExtendedObj.prototype.loadPageTimeoutId = 0;
+    ExtendedObj.prototype.loadPage = function loadPage(url) {
+        
+        // first check and clear if the previous timer is still waiting
+        //:TODO: More work needs to be done to handle the ws connections properly in the case that user quickly 
+        // switches docs before each is loaded and connected.
+        if (this.loadPageTimeoutId) {
+            clearTimeout(this.loadPageTimeoutId);
+        }
+        this.loadPageTimeoutId = setTimeout(function () {
+            //console.log("loading: " + url);
+            window.location = url;
+        }, 500);
+    };
+
     return new ExtendedObj();
 }
