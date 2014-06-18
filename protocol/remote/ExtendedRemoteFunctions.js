@@ -36,34 +36,37 @@ function ExtendRemoteFunctions(obj) {
 
     ExtendedObj.prototype.reloadCSS = function reloadCSS(url, text) {
         var i,
+            found = false,
             node;
 
-        var head = document.getElementsByTagName('head')[0];
-        // create an style element to replace the one loaded with <link>
-        var s = document.createElement('style');
-        s.type = 'text/css';
-        s.appendChild(document.createTextNode(text));
 
         for (i = 0; i < document.styleSheets.length; i++) {
             node = document.styleSheets[i];
             if (node.ownerNode.id === url) {
-                head.insertBefore(s, node.ownerNode); // insert the style element here
-                // now can remove the style element previously created (if any)
-                if (node.ownerNode.disabled) {
-                    // remove it, if it's previously disabled
-                    node.ownerNode.parentNode.removeChild(node.ownerNode);
-                } else {
-                    node.ownerNode.disabled = true;
-                    i++; // since we have just inserted a stylesheet
-                }
-            } else if (node.href === url  && !node.disabled) {
-                // if the link element to change 
-                head.insertBefore(s, node.ownerNode); // insert the style element here
-                node.disabled = true;
-                i++; // since we have just inserted a stylesheet
+                // if the style element previously added
+                // add something to the end to modify the text. 
+                // This is for testing for now, if used in production need to modify to avoid continously 
+                // enlarging it.
+                node.ownerNode.textContent += "/**/ ";
+                found = true;
             }
         }
-        s.id = url;
+        if (!found) {
+            var head = document.getElementsByTagName('head')[0];
+            // create an style element to replace the one loaded with <link>
+            var s = document.createElement('style');
+            s.type = 'text/css';
+            s.appendChild(document.createTextNode(text));
+            s.id = url;
+            for (i = 0; i < document.styleSheets.length; i++) {
+                node = document.styleSheets[i];
+                if (node.href === url) {
+                    head.insertBefore(s, node.ownerNode); // insert the style element here
+                    node.disabled = true;
+                    i++;
+                }
+            }
+        }
     };
     return new ExtendedObj();
 }
