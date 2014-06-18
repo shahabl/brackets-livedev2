@@ -50,7 +50,6 @@ function ExtendRemoteFunctions(obj) {
                 // if the link element to change 
                 head.appendChild(s); // insert the style element here
                 node.disabled = true;
-                console.log('creating');
             } else if (node.href !== url && node.ownerNode.id === url) {
                 // now can remove the style element previously created (if any)
                 node.ownerNode.parentNode.removeChild(node.ownerNode);
@@ -69,7 +68,6 @@ function ExtendRemoteFunctions(obj) {
             clearTimeout(this.loadPageTimeoutId);
         }
         this.loadPageTimeoutId = setTimeout(function () {
-            //console.log("loading: " + url);
             window.location = url;
         }, 500);
     };
