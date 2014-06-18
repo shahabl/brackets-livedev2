@@ -233,13 +233,13 @@
             if (i !== -1) {
                 liveBrowserOpenedPIDs.splice(i, 1);
             }
-          if (process.platform === "win32") {
-            var args = ["/PID"];
-            args.push(pid);
-            spawn("taskkill", args);
-          } else {
-            process.kill(pid);
-          }
+            if (process.platform === "win32") {
+                var args = ["/PID"];
+                args.push(pid);
+                spawn("taskkill", args);
+            } else {
+                process.kill(pid);
+            }
         }
         //:TODO: callback needed?
     }
