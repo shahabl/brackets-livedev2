@@ -27,8 +27,10 @@
     "use strict";
     
     var WebSocketServer = require("ws").Server,
-        open = require("open"),
-        _ = require("lodash");
+        _ = require("lodash"),
+        BrowserControl = require("./BrowserControl"),
+        openLiveBrowser = BrowserControl.openLiveBrowser,
+        closeAllLiveBrowsers = BrowserControl.closeAllLiveBrowsers;
     
     /**
      * @private
@@ -107,7 +109,7 @@
                             url: msgObj.url,
                             socket: ws
                         };
-                        console.log("emitting connect event");
+                        console.log("emitting connect event, id: " + clientId + ", ws: " + ws);
                         _domainManager.emitEvent("nodeSocketTransport", "connect", [clientId, msgObj.url]);
                     } else if (msgObj.type === "message") {
                         var client = _clientForSocket(ws);
@@ -139,10 +141,11 @@
     /**
      * Initializes the socket server, then launches the given URL in the system default browser.
      * @param {string} url
+     * @return {number} pid of the new browser process
      */
-    function _cmdLaunch(url) {
-        _createServer();
-        open(url);
+    function _cmdLaunch(url, callback) {
+        _createServer();  //:TODO: Need to check for error here?
+        openLiveBrowser(url, callback);
     }
     
     /**
@@ -176,6 +179,10 @@
         }
     }
     
+    function _cmdCloseAllBrowsers(clientId) {
+        closeAllLiveBrowsers();
+    }
+    
     /**
      * Initializes the domain and registers commands.
      * @param {DomainManager} domainManager The DomainManager for the server
@@ -189,12 +196,15 @@
             "nodeSocketTransport",      // domain name
             "launch",       // command name
             _cmdLaunch,     // command handler function
-            false,          // this command is synchronous in Node
+            true,          // this command is asynchronous in Node
             "Launches a given HTML file in the browser for live development",
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
-            []
+		    [],
+            [{name: "pid",  // return value
+                type: "number",
+                description: "pid of the new browser process"}]
         );
         domainManager.registerCommand(
             "nodeSocketTransport",      // domain name
@@ -216,6 +226,16 @@
             "Closes the connection to a given client",
             [
                 {name: "id", type: "number", description: "id of connection to close"}
+            ],
+            []
+        );
+        domainManager.registerCommand(
+            "nodeSocketTransport",      // domain name
+            "closeAllBrowsers",         // command name
+            _cmdCloseAllBrowsers,       // command handler function
+            false,          // this command is synchronous in Node
+            "Closes the browsers",
+            [
             ],
             []
         );

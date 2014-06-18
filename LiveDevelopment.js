@@ -505,10 +505,10 @@ define(function (require, exports, module) {
             }
         }
 
-        // TODO: don't have a way to close windows in the new architecture
-//        if (doCloseWindow) {
-//        }
-        
+        if (doCloseWindow) {
+            _protocol.closeAllBrowsers();
+        }
+       
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
 
