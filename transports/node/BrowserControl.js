@@ -134,22 +134,19 @@
 
         var regKeyPath1,
             regKeyPath2 = '\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders',
-            excutablePath1,
             excutablePath2,
             args;
-        
+
         //var browser = "Chrome"; // temp
         var browser = "FireFox"; // temp
         switch (browser) {
         case "Chrome":
             regKeyPath1 = '\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe';
-            excutablePath1 = '\\chrome.exe';
             excutablePath2 = '\\Google\\Chrome\\Application\\chrome.exe';
             args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
             break;
         case "FireFox":
-            regKeyPath1 = "\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe";
-            excutablePath1 = "\\firefox.exe";
+            regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
             excutablePath2 = "\\Mozilla\\FireFox\\Application\\firefox.exe";  //TODO: check if this is correct
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
             //:Todo: first time need to create a profile (check the user_data_dir if the file perfs.js exists
@@ -157,7 +154,7 @@
             // also to prevent asking for default can add this line to the file: user_pref("browser.shell.checkDefaultBrowser", false);
             break;
         }
-        
+
         var regKey1 = new Winreg({
             hive: Winreg.HKLM,                                          // HKEY_LOCAL_MACHINE
             key:  regKeyPath1
@@ -171,20 +168,14 @@
         //TODO: Review error handling 
         regKey1.values(function (err, items) {
             if (!err && items && items.length) {
-                regKey1.get(items[0].name, function (err, item) {
-                    if (!err && item) {
-                        var path = item.value + excutablePath1;
-                        var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
-                        if (cp.pid !== 0) {
-                            liveBrowserOpenedPIDs.push(cp.pid);
-                            callback(null, cp.pid);
-                        } else {
-                            callback(CANNOT_RUN_BROWSER);
-                        }
-                    } else {
-                        callback(FILE_NOT_FOUND);
-                    }
-                });
+                var path = items[0].value.replace (/"/g,'');
+                var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
+                if (cp.pid !== 0) {
+                    liveBrowserOpenedPIDs.push(cp.pid);
+                    callback(null, cp.pid);
+                } else {
+                    callback(CANNOT_RUN_BROWSER);
+                }
             } else {
                 regKey2.values(function (err, items) {
                     if (!err && items) {
