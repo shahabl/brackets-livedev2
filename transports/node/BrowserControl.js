@@ -49,12 +49,13 @@
         if (process.platform === "win32") {
             return 'c:\\TEMP';
         } else if (process.platform === "darwin") {
-            return '/Users/username/TEMP';  //:temp replace with your home folder path
+            return process.env.HOME + "/TEMP";
         } else if (process.platform === "linux") {
             return '$/users/username/TEMP';
         }
         return null;
     }
+    
     function _findAppByKeyMac(key) {
         var deferred = Q.defer();
         var macMdfindQuery = util.format(MAC_MDFIND_QUERY, key);
@@ -89,7 +90,7 @@
         return deferred.promise;
     }
 
-    function _openLiveBrowserLinux(url, callback) {
+    function _openLiveBrowserLinux(url, callback, browser) {
         var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
         var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
         var res = cpExec("which google-chrome", function (error, path, stderr) {
@@ -104,22 +105,52 @@
         });
     }
 
-    function _openLiveBrowserMac(url, callback) {
-        _findAppByKeyMac("com.google.Chrome")
+    function _openLiveBrowserMac(url, callback, browser) {
+        
+        var fs = require("fs"),
+            args = [],
+            appKey = "",
+            user_data_dir = getApplicationSupportDirectory() + "/editor" + "/live-dev-profile";
+
+        function openBrowser(path, args) {
+            if (path) {
+                var cp = spawn(path, args);
+                liveBrowserOpenedPIDs.push(cp.pid);
+                callback(null, cp.pid);
+            } else {
+                //TODO: Review error handling
+                callback(FILE_NOT_FOUND);
+            }
+        }
+        
+        switch (browser) {
+        case "Chrome":
+            args = [url, "--no-first-run", "--no-default-browser-check", "--allow-file-access-from-files", "--temp-profile", "--user-data-dir=" + user_data_dir];
+            appKey = "com.google.Chrome";
+            break;
+        case "FireFox":
+            args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
+            appKey = "org.mozilla.firefox";
+            break;
+        }
+
+        _findAppByKeyMac(appKey)
             .then(function (path) {
-                var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
-                var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
-                //:TODO: The following wont' work if we don't set the remote-debugging-port
-                var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
-                    if (path) {
-                        var cp = spawn(path, args);
-                        liveBrowserOpenedPIDs.push(cp.pid);
-                        callback(null, cp.pid);
+                if (browser === "Chrome") {
+                    //Note: The following wont' work if we don't set the remote-debugging-port
+                    var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
+                        openBrowser(path, args);
+                    });
+                } else if (browser === "FireFox") {
+                    if (!fs.existsSync(user_data_dir + "/prefs.js")) {
+                        // if it's the first time running create a profile
+                        var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
+                        spawn(path, args2);
+                        setTimeout(function () {openBrowser(path, args); }, 500); // open the browser after a delay to give time to above run first
                     } else {
-                        //TODO: Review error handling
-                        callback(FILE_NOT_FOUND);
+                        openBrowser(path, args);
                     }
-                });
+                }
             })
             .fail(function (err) {
                 //TODO: Review error handling
@@ -128,7 +159,7 @@
             .done();
     }
 
-    function _openLiveBrowserWindows(url, callback) {
+    function _openLiveBrowserWindows(url, callback, browser) {
         var Winreg = require('winreg');
         var user_data_dir = getApplicationSupportDirectory() + '\\editor' + '\\live-dev-profile';
 
@@ -138,8 +169,6 @@
             args,
             fs = require("fs");
 
-        //var browser = "Chrome"; // temp
-        var browser = "FireFox"; // temp
         switch (browser) {
         case "Chrome":
             regKeyPath1 = '\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe';
@@ -230,8 +259,13 @@
      *
      * @return None. This is an asynchronous call that sends all return information to the callback.
      */
-    function openLiveBrowser(url, callback) {
+    function openLiveBrowser(url, callback, browser) {
         var openLiveBrowserPlatform = null;
+      
+        if (browser === undefined) {
+            //browser = "Chrome";
+            browser = "FireFox";
+        }
 
         if (process.platform === "win32") {
             openLiveBrowserPlatform = _openLiveBrowserWindows;
@@ -241,7 +275,7 @@
             openLiveBrowserPlatform = _openLiveBrowserLinux;
         }
         if (openLiveBrowserPlatform) {
-            openLiveBrowserPlatform(url, callback);
+            openLiveBrowserPlatform(url, callback, browser);
         }
     }
 
