@@ -37,17 +37,22 @@ function ExtendRemoteFunctions(obj) {
     ExtendedObj.prototype.reloadCSS = function reloadCSS(url, text) {
         var i,
             found = false,
+            endComment = /\/\*\*\/$/,
+            hadComment,
             node;
-
 
         for (i = 0; i < document.styleSheets.length; i++) {
             node = document.styleSheets[i];
             if (node.ownerNode.id === url) {
                 // if the style element previously added
-                // add something to the end to modify the text. 
-                // This is for testing for now, if used in production need to modify to avoid continously 
-                // enlarging it.
-                node.ownerNode.textContent += "/**/ ";
+                // update the text, also flip/flop a comment at the end to make browser update it
+                // this is needed for the case that a child stlye sheet is being modified (parent won't be changed
+                // if we dont' do this)
+                hadComment = endComment.test(node.ownerNode.textContent);
+                node.ownerNode.textContent = text.replace(endComment, ""); // remove the comment at the end of text (if any)
+                if (!hadComment) {
+                    node.ownerNode.textContent += "/**/";
+                }
                 found = true;
             }
         }
