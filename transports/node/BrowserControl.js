@@ -35,8 +35,7 @@
         CANNOT_RUN_BROWSER = -2;
 
     var MAC_MDFIND_QUERY    = "mdfind \"kMDItemCFBundleIdentifier == '%s'\"",
-        MAC_CODESIGN_QUERY  = "codesign --display \"%s\"",
-        MAC_RE_VALUE        = /Executable=(.*)/;
+        MAC_CODESIGN_QUERY  = "codesign --display \"%s\"";
 
     /**
      * @private
@@ -74,8 +73,7 @@
 
             cpExec(macCodesignQuery, null, function (error, stdout, stderr) {
                 var pathToBinary = stderr && stderr.trim(),   // codesign writes to stderr
-                    exec = pathToBinary && MAC_RE_VALUE.exec(pathToBinary),
-                    path = exec && exec[1];
+                    path = pathToBinary.replace("Executable=", "");
 
                 if (!path) {
                     error = util.format("Could not find binary in application bundle %s", pathToBundle);
