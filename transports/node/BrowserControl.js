@@ -47,7 +47,7 @@
     // The following function is temp for testing, //:TODO: Set and get the appropriate folder
     function getApplicationSupportDirectory() {
         if (process.platform === "win32") {
-            return 'c:/TEMP';
+            return 'c:\\TEMP';
         } else if (process.platform === "darwin") {
             return '/Users/username/TEMP';  //:temp replace with your home folder path
         } else if (process.platform === "linux") {
@@ -130,12 +130,13 @@
 
     function _openLiveBrowserWindows(url, callback) {
         var Winreg = require('winreg');
-        var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
+        var user_data_dir = getApplicationSupportDirectory() + '\\editor' + '\\live-dev-profile';
 
         var regKeyPath1,
             regKeyPath2 = '\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders',
             excutablePath2,
-            args;
+            args,
+            fs = require("fs");
 
         //var browser = "Chrome"; // temp
         var browser = "FireFox"; // temp
@@ -149,9 +150,7 @@
             regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
             excutablePath2 = "\\Mozilla\\FireFox\\Application\\firefox.exe";  //TODO: check if this is correct
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
-            //:Todo: first time need to create a profile (check the user_data_dir if the file perfs.js exists
-            //args = ["-createProfile", "live-dev-profile " + user_data_dir, "-url", url];
-            // also to prevent asking for default can add this line to the file: user_pref("browser.shell.checkDefaultBrowser", false);
+
             break;
         }
 
@@ -165,38 +164,57 @@
             key:  regKeyPath2
         });
 
-        //TODO: Review error handling 
-        regKey1.values(function (err, items) {
-            if (!err && items && items.length) {
-                var path = items[0].value.replace (/"/g,'');
-                var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
-                if (cp.pid !== 0) {
-                    liveBrowserOpenedPIDs.push(cp.pid);
-                    callback(null, cp.pid);
-                } else {
-                    callback(CANNOT_RUN_BROWSER);
-                }
-            } else {
-                regKey2.values(function (err, items) {
-                    if (!err && items) {
-                        regKey2.get('Local AppData', function (err, item) {
-                            if (!err && item) {
-                                var path = item.value + excutablePath2;
-                                var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
-                                if (cp.pid !== 0) {
-                                    liveBrowserOpenedPIDs.push(cp.pid);
-                                    callback(null, cp.pid);
-                                } else {
-                                    callback(CANNOT_RUN_BROWSER);
-                                }
-                            }
-                        });
+        function findAndOpenBrowser() {
+            //TODO: Review error handling 
+            regKey1.values(function (err, items) {
+                if (!err && items && items.length) {
+                    var path = items[0].value.replace(/"/g, '');
+                    var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
+                    if (cp.pid !== 0) {
+                        liveBrowserOpenedPIDs.push(cp.pid);
+                        callback(null, cp.pid);
                     } else {
-                        callback(FILE_NOT_FOUND);
+                        callback(CANNOT_RUN_BROWSER);
                     }
-                });
-            }
-        });
+                } else {
+                    regKey2.values(function (err, items) {
+                        if (!err && items) {
+                            regKey2.get('Local AppData', function (err, item) {
+                                if (!err && item) {
+                                    var path = item.value + excutablePath2;
+                                    var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
+                                    if (cp.pid !== 0) {
+                                        liveBrowserOpenedPIDs.push(cp.pid);
+                                        callback(null, cp.pid);
+                                    } else {
+                                        callback(CANNOT_RUN_BROWSER);
+                                    }
+                                }
+                            });
+                        } else {
+                            callback(FILE_NOT_FOUND);
+                        }
+                    });
+                }
+            });
+        }
+
+        if (browser === "FireFox" && !fs.existsSync(user_data_dir + "/prefs.js")) {
+            // if it's the first time running create a profile
+            var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
+            regKey1.values(function (err, items) {
+                if (!err && items && items.length) {
+                    var path = items[0].value.replace(/"/g, '');
+                    spawn(path, args2).on('error', console.error);
+                    // Note: To prevent FF asking to be default can add the following line to the prefs.js file: 
+                    //       user_pref("browser.shell.checkDefaultBrowser", false);
+                    setTimeout(findAndOpenBrowser, 500); // open the browser after a delay to give time to above run first
+                }
+            });
+        } else {
+            findAndOpenBrowser();
+        }
+
     }
 
     /**
