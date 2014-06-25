@@ -21,7 +21,6 @@
  * 
  */
 
-/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, forin: true, maxerr: 50, regexp: true */
 /*global define, $, brackets, window, open */
 
 /**
@@ -176,24 +175,6 @@ define(function (require, exports, module) {
     }
     
     /**
-     * Protocol method. Retrieves related docs (external JS files and stylesheets), and returns a promise
-     * that will be fulfilled with an object that contains two collections of URLs (scripts and stylesheets).
-     * @param {number|Array.<number>} clients A client ID or array of client IDs to retrieve related docs from.
-     * @return {$.Promise} A promise that's resolved with the return value from the first client that responds
-     *      to the operation.
-     * TODO: we should probably take a particular client  as the reference for the query if we assume that DOM 
-     * is always the same for all clients?
-     */
-    function getRelated(clients) {
-        return _send(
-            clients,
-            {
-                method: "Document.Related",
-                params: {}
-            }
-        );
-    }
-    /**
      * Closes the connection to the given client. Proxies to the transport.
      * @param {number} clientId
      */
@@ -205,6 +186,5 @@ define(function (require, exports, module) {
     exports.getRemoteScript = getRemoteScript;
     exports.launch = launch;
     exports.evaluate = evaluate;
-    exports.getRelated = getRelated;
     exports.close = close;
 });

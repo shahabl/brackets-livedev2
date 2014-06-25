@@ -21,8 +21,9 @@
  * 
  */
 
-/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50, evil: true */
-/*global $, brackets, define, describe, it, xit, expect, beforeEach, afterEach, beforeFirst, afterLast, waitsFor, waitsForDone, runs, window, spyOn, jasmine */
+/*jslint evil: true */
+
+/*global $, brackets, define, describe, it, xit, expect, beforeFirst, afterLast, console, beforeEach, afterEach, waitsFor, waitsForDone, runs, window, spyOn, jasmine */
 
 define(function (require, exports, module) {
     "use strict";
@@ -210,6 +211,53 @@ define(function (require, exports, module) {
             });
 
         });
+    });
 
+    describe("Remote functions", function () {
+        
+        describe("RelatedDocuments", function () {
+
+            var htmlDocument,
+                head,
+                mockTransport;
+                    
+            var DocumentObserver = require("text!protocol/remote/DocumentObserver.js");
+            DocumentObserver = eval("(" + DocumentObserver.trim() + ")()");
+            
+            beforeEach(function () {
+                htmlDocument = window.document.implementation.createHTMLDocument();
+                head = htmlDocument.getElementsByTagName('head')[0];
+                mockTransport = jasmine.createSpyObj('mockTransoprt', ['send']);
+                mockTransport.send.andCallFake(function (msg) { console.log(msg); });
+            });
+            
+            afterEach(function () {
+                htmlDocument = null;
+                mockTransport = null;
+            });
+                 
+            it('should return all the external JS files', function () {
+                
+                var s1Url = "http://some_url.com/s1.js";
+                var s1 = htmlDocument.createElement('script');
+                s1.type = "text/javascript";
+                s1.src = s1Url;
+                head.appendChild(s1);
+                
+                var s2Url = "http://some_url.com/s2.js";
+                var s2 = htmlDocument.createElement('script');
+                s2.type = "text/javascript";
+                s2.src = s2Url;
+                head.appendChild(s2);
+                
+                DocumentObserver.start(htmlDocument, mockTransport);
+                var related = DocumentObserver.related();
+                
+                expect(related.scripts[s1Url]).toBe(true);
+                expect(related.scripts[s2Url]).toBe(true);
+                
+            });
+                
+        });
     });
 });
