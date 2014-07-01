@@ -49,16 +49,16 @@
         /**
          * Collection of handlers (subscribers) per each method.
          * To be pushed by 'on' and consumed by 'trigger' stored this way: 
-         *      handlers[method] = [handler1, handeler2, ...]
+         *      handlers[method] = [handler1, handler2, ...]
          */
         handlers: {},
         
          /**
           * Dispatch messages to handlers according to msg.method value.
-          * @param {Object} Message to be dispatched.
+          * @param {Object} msg Message to be dispatched.
           */
         trigger: function (msg) {
-            var handlers;
+            var msgHandlers;
             if (!msg.method) {
                 // no message type, ignoring it
                 // TODO: should we trigger a generic event?
@@ -66,13 +66,13 @@
                 return;
             }
             // get handlers for msg.method
-            handlers = this.handlers[msg.method];
+            msgHandlers = this.handlers[msg.method];
             
-            if (handlers && handlers.length > 0) {
-                //invoke handlers with the received message
-                this.handlers[msg.method].forEach(function (handler) {
+            if (msgHandlers && msgHandlers.length > 0) {
+                // invoke handlers with the received message
+                msgHandlers.forEach(function (handler) {
                     try {
-                        //TODO: check which context should be used to call handlers here.
+                        // TODO: check which context should be used to call handlers here.
                         handler(msg);
                         return;
                     } catch (e) {
@@ -91,8 +91,8 @@
         /**
          * Send a response of a particular message to the Editor.
          * Original message must provide an 'id' property
-         * @param {Object} Original message
-         * @param {string} Message to be sent as the response.
+         * @param {Object} orig Original message.
+         * @param {Object} response Message to be sent as the response.
          */
         respond: function (orig, response) {
             if (!orig.id) {
@@ -100,7 +100,33 @@
                 return;
             }
             response.id = orig.id;
-            transport.send(JSON.stringify(response));
+            this.send(JSON.stringify(response));
+        },
+        
+        /**
+         * Subscribe handlers to specific messages.
+         * @param {string} method Message type.
+         * @param {function} handler.
+         * TODO: add handler name or any identification mechanism to then implement 'off'?
+         */
+        on: function (method, handler) {
+            if (!method || !handler) {
+                return;
+            }
+            if (!this.handlers[method]) {
+                //initialize array
+                this.handlers[method] = [];
+            }
+            // add handler to the stack
+            this.handlers[method].push(handler);
+        },
+        
+        /**
+         * Send a message to the Editor.
+         * @param {string} msgStr Message to be sent.
+         */
+        send: function (msgStr) {
+            transport.send(JSON.stringify(msgStr));
         },
         
         /**
@@ -130,10 +156,9 @@
         }
     };
     
-        
-    /*
-    * Runtime Domain. Implements remote commands for "Runtime.*"
-    */
+    /**
+     * Runtime Domain. Implements remote commands for "Runtime.*"
+     */
     var Runtime = {
         /**
          * Evaluate an expresion and return its result.
@@ -157,7 +182,7 @@
         /**
          * Handles a message from the transport. Parses it as JSON and delegates
          * to MessageBroker who is in charge of routing them to handlers.
-         * @param {msgStr} string The protocol message as stringified JSON.
+         * @param {string} msgStr The protocol message as stringified JSON.
          */
         message: function (msgStr) {
             var msg;
@@ -165,6 +190,8 @@
                 msg = JSON.parse(msgStr);
             } catch (e) {
                 console.log("[Brackets LiveDev] Invalid Message Received");
+                // TODO: we should probably send back an error message here?
+                return;
             }
             // delegates handling/routing to MessageBroker.
             MessageBroker.trigger(msg);
