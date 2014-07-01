@@ -96,10 +96,10 @@ define(function (require, exports, module) {
      * Closes the live document, terminating its connection to the browser.
      */
     LiveDocument.prototype.close = function () {
-        //TODO: temporarily disabling this since it prevents reloading the page after JS changes,
-        //need to review it when implementing life cycle.
+        var self = this;
+        //FIXME: #7 prevents the page to be reloaded when editing JS files.
+        //       Temporarily disabling this code to make JS editing work.
         
-//        var self = this;
 //        this.getConnectionIds().forEach(function (clientId) {
 //            self.protocol.close(clientId);
 //        });
@@ -112,7 +112,7 @@ define(function (require, exports, module) {
 //        $(EditorManager).off("activeEditorChange", this._onActiveEditorChange);
 //        PreferencesManager.stateManager.getPreference("livedev2.highlight")
 //            .off("change", this._onHighlightPrefChange);
-//        
+        
     };
     
     /**
@@ -176,7 +176,9 @@ define(function (require, exports, module) {
      * @param {?Editor} oldActive
      */
     LiveDocument.prototype._onActiveEditorChange = function (event, newActive, oldActive) {
-        //TODO: temporarily disabling this since it prevents reloading the page after JS changes. 
+ 
+        //FIXME: #7 prevents the page to be reloaded when editing JS files.
+        //       Temporarily disabling this code to make JS editing work.
 //      this._detachFromEditor();
         
         if (newActive && newActive.document === this.doc) {
