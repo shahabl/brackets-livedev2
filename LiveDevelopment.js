@@ -511,6 +511,9 @@ define(function (require, exports, module) {
 //        if (doCloseWindow) {
 //        }
         
+        // Close all active connections
+        _protocol.closeAllConnections();
+        
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
 
@@ -579,6 +582,12 @@ define(function (require, exports, module) {
                             if (doc && msg.url === _resolveUrl(doc.file.fullPath)) {
                                 _setStatus(STATUS_ACTIVE);
                             }
+                        }
+                    })
+                    .on("Connection.close.livedev", function (event, msg) {
+                        // close session when the last connection was closed
+                        if (_protocol.getConnectionIds().length === 0) {
+                            close();
                         }
                     })
                     // extract stylesheets and create related LiveCSSDocument instances
