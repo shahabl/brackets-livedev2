@@ -572,18 +572,14 @@ define(function (require, exports, module) {
                 _protocol.launch(_server.pathToUrl(doc.file.fullPath));
 
                 $(_protocol)
-                    // move the status to ACTIVE in the first connection
-                    .on("Session.start.livedev", function (event, msg) {
-                        // check for reloading?
-                        var doc = _getCurrentDocument();
-                        if (doc && msg.url === _resolveUrl(doc.file.fullPath)) {
-                            _setStatus(STATUS_ACTIVE);
+                    // TODO: timeout if we don't get a connection within a certain time
+                    .on("Connection.connect.livedev", function (event, msg) {
+                        if (_protocol.getConnectionIds().length === 1) {
+                            var doc = _getCurrentDocument();
+                            if (doc && msg.url === _resolveUrl(doc.file.fullPath)) {
+                                _setStatus(STATUS_ACTIVE);
+                            }
                         }
-                    })
-                    // close session when the last connection has been closed
-                    .on("Session.end.livedev", function (event) {
-                        // check for reloading?
-                        // close();
                     })
                     // extract stylesheets and create related LiveCSSDocument instances
                     .on("Document.Related.livedev", function (event, msg) {

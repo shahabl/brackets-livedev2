@@ -21,20 +21,24 @@
  * 
  */
 
+/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, forin: true, maxerr: 50, regexp: true */
 /*global define, $, brackets, window, open, _ */
 
 /**
  * Provides the protocol that Brackets uses to talk to a browser instance for live development.
  * Protocol methods are converted to a JSON message format, which is then sent over a provided
  * low-level transport and interpreted in the browser. For messages that expect a response, the
- * response is returned through a promise as an object.
+ * response is returned through a promise as an object. Scripts that implement remote logic are
+ * provided during the instrumentation stage by "getRemoteFunctions()".
  *
- * Events raised by the remote browser are dispatched as jQuery "event" events, with the first
- * parameter being the client ID of the remote browser, and the second parameter being the 
- * message object.
+ * Events raised by the remote browser are dispatched as jQuery events which type is equal to the 'method' 
+ * property. The received message object is dispatched as the first parameter and enriched with a 
+ * 'clientId' property being the client ID of the remote browser.
  *
- * Also proxies through the "launch" and "close" methods and the "connect" and "close" events
- * to/from the underlying transport.
+ * It keeps active connections which are  updated when receiving "connect" and "close" from the 
+ * underlying transport. Events "Connection.connect"/"Connection.close" are triggered as 
+ * propagation of transport's "connect"/"close". Also proxies "launch" command to transport.
+ * 
  */
 
 define(function (require, exports, module) {
@@ -107,6 +111,7 @@ define(function (require, exports, module) {
                 }
             }
         } else {
+            // enrich received message with clientId
             msg.clientId = clientId;
             $(exports).triggerHandler(event, msg);
         }
@@ -133,7 +138,6 @@ define(function (require, exports, module) {
         return result.promise();
     }
     
-    
      /**
      * @private
      * Handles when a connection is made to the live development protocol handler.
@@ -151,16 +155,8 @@ define(function (require, exports, module) {
             clientId: clientId,
             url: url
         });
-        
-        // if this is the first connection trigger a session start event
-        if (getConnectionIds().length === 1) {
-            $(exports).triggerHandler("Session.start", {
-                url: url
-            });
-        }
     }
     
-        
     /**
      * @private
      * Handles when a connection is closed.
@@ -171,10 +167,6 @@ define(function (require, exports, module) {
         $(exports).triggerHandler("Connection.close", {
             clientId: clientId
         });
-        if ($.isEmptyObject(_connections)) {
-            // last connection was closed
-            $(exports).triggerHandler("Session.end");
-        }
     }
     
     
@@ -204,6 +196,7 @@ define(function (require, exports, module) {
     /**
      * Returns a script that should be injected into the HTML that's launched in the
      * browser in order to implement remote commands that handle protocol requests. 
+     * Includes the <script> tags.
      * @return {string}
      */
     function getRemoteFunctionsScript() {
