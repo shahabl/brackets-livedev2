@@ -187,6 +187,17 @@
             }
             // delegates handling/routing to MessageBroker.
             MessageBroker.trigger(msg);
+        },
+        
+        close: function (evt) {
+            // TODO: this is absolutely temporary solution
+            var closedSessionPage = "<head>" +
+                                        "<title>Live Development Session Finished</title>" +
+                                    "</head>" +
+                                    "<body>" +
+                                        "Live Development Session Finished" +
+                                    "</body>";
+            document.getElementsByTagName('HTML')[0].innerHTML =  closedSessionPage;
         }
     };
     
