@@ -127,32 +127,6 @@
          */
         send: function (msgStr) {
             transport.send(JSON.stringify(msgStr));
-        },
-        
-        /**
-         * Subscribe handlers to specific messages.
-         * @param {string} method Message type.
-         * @param {function} handler.
-         * TODO: add handler name or any identification mechanism to then implement 'off'?
-         */
-        on: function (method, handler) {
-            if (!method || !handler) {
-                return;
-            }
-            if (!this.handlers[method]) {
-                //initialize array
-                this.handlers[method] = [];
-            }
-            // add handler to the stack
-            this.handlers[method].push(handler);
-        },
-        
-        /**
-         * Send a message to the Editor.
-         * @param {string} msgStr Message to be sent.
-         */
-        send: function (msgStr) {
-            transport.send(JSON.stringify(msgStr));
         }
     };
     
