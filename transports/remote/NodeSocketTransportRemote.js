@@ -48,6 +48,18 @@
         _callbacks: null,
         
         /**
+         * @private
+         * An array containing the messages to be sent
+         */
+        _messageQueue: [],
+        
+        /**
+         * @private
+         * used to track the setInterval id for send method
+         */
+        _sendIntervalId:  0,
+        
+        /**
          * Sets the callbacks that should be called when various transport events occur. All callbacks
          * are optional, but you should at least implement "message" or nothing interesting will happen :)
          * @param {?{connect: ?function, message: ?function(string), close: ?function}} callbacks
@@ -107,6 +119,9 @@
                 if (self._callbacks && self._callbacks.close) {
                     self._callbacks.close();
                 }
+                self._messageQueue = [];
+                clearInterval(self._sendIntervalId);
+                self._sendIntervalId = 0;
             };
             // TODO: onerror
         },
@@ -116,13 +131,45 @@
          * @param {string} msgStr The message to send.
          */
         send: function (msgStr) {
+            var self = this;
+            var tryMaxCount = 0; // max try send
+            
+            function sendMessage(ws, queue) {
+                if (ws.readyState === 1) {  // need to check again since might be called from state 0
+                    tryMaxCount = 0;
+                    clearInterval(self._sendIntervalId);
+                    self._sendIntervalId = 0;
+                    while (self._ws.readyState === 1 && self._messageQueue.length) { // check again in case connection closes
+                        ws.send(JSON.stringify({
+                            type: "message",
+                            message: queue.shift()
+                        }));
+                    }
+                } else {
+                    if (tryMaxCount++ > 50) {
+                        // stop trying if connection status does not change to ready after a while
+                        clearInterval(self._sendIntervalId);
+                        self._sendIntervalId = 0;
+                        console.log("[Brackets LiveDev] Stopped Trying to send message: " + msgStr);
+                    }
+                }
+            }
+            
             if (this._ws) {
-                // See comment in `connect()` above about why we wrap the message in a transport message
-                // object.
-                this._ws.send(JSON.stringify({
-                    type: "message",
-                    message: msgStr
-                }));
+                if (this._ws.readyState < 2) {  // if connection not closing or closed
+                    this._messageQueue.push(msgStr);
+                    if (this._ws.readyState === 0) {       // if in the process of connecting
+                        if (!this._sendIntervalId) { // if not already trying to send
+                            this._sendIntervalId = setInterval(function () {  // try again!
+                                sendMessage(self._ws, self._messageQueue);
+                            }, 50);
+                        }
+                    }
+                } else if (this._ws.readyState === 1) {
+                    // See comment in `connect()` above about why we wrap the message in a transport message
+                    // object.
+                    sendMessage(this._ws, this._messageQueue);
+                }
             } else {
                 console.log("[Brackets LiveDev] Tried to send message over closed connection: " + msgStr);
             }
