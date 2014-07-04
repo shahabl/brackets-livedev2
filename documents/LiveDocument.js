@@ -92,18 +92,11 @@ define(function (require, exports, module) {
         //FIXME: #7 prevents the page to be reloaded when editing JS files.
         //       Temporarily disabling this code to make JS editing work.
         
-//        this.getConnectionIds().forEach(function (clientId) {
-//            self.protocol.close(clientId);
-//        });
-//        this.connections = {};
-//        $(this.protocol)
-//            .off("connect", this._onConnect)
-//            .off("close", this._onClose);
-//        this._clearErrorDisplay();
-//        this._detachFromEditor();
-//        $(EditorManager).off("activeEditorChange", this._onActiveEditorChange);
-//        PreferencesManager.stateManager.getPreference("livedev2.highlight")
-//            .off("change", this._onHighlightPrefChange);
+        this._clearErrorDisplay();
+        this._detachFromEditor();
+        $(EditorManager).off("activeEditorChange", this._onActiveEditorChange);
+        PreferencesManager.stateManager.getPreference("livedev2.highlight")
+            .off("change", this._onHighlightPrefChange);
         
     };
     

@@ -71,6 +71,7 @@ define(function (require, exports, module) {
     var STATUS_ACTIVE         = exports.STATUS_ACTIVE         =  3;
     var STATUS_OUT_OF_SYNC    = exports.STATUS_OUT_OF_SYNC    =  4;
     var STATUS_SYNC_ERROR     = exports.STATUS_SYNC_ERROR     =  5;
+    var STATUS_RELOADING      = exports.STATUS_RELOADING      =  6;
 
     var Async                = brackets.getModule("utils/Async"),
         Dialogs              = brackets.getModule("widgets/Dialogs"),
@@ -511,6 +512,9 @@ define(function (require, exports, module) {
 //        if (doCloseWindow) {
 //        }
         
+        // Close all active connections
+        _protocol.closeAllConnections();
+        
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
 
@@ -569,15 +573,30 @@ define(function (require, exports, module) {
         if (doc && _liveDocument && doc === _liveDocument.doc) {
             if (_server) {
                 // Launch the URL in the browser. 
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath));
+                if (exports.status < STATUS_ACTIVE) {
+                    _protocol.launch(_server.pathToUrl(doc.file.fullPath));
+                }
 
                 $(_protocol)
                     // TODO: timeout if we don't get a connection within a certain time
                     .on("Connection.connect.livedev", function (event, msg) {
                         if (_protocol.getConnectionIds().length === 1) {
+                            /*
                             var doc = _getCurrentDocument();
                             if (doc && msg.url === _resolveUrl(doc.file.fullPath)) {
+                                
+                            }*/
+                            if (exports.status === STATUS_RELOADING) {
                                 _setStatus(STATUS_ACTIVE);
+                            }
+                            
+                        }
+                    })
+                    .on("Connection.close.livedev", function (event, msg) {
+                        // close session when the last connection was closed
+                        if (_protocol.getConnectionIds().length === 0) {
+                            if (exports.status !== STATUS_RELOADING) {
+                                close();
                             }
                         }
                     })
@@ -768,6 +787,7 @@ define(function (require, exports, module) {
         // to the current live document.
         if (_liveDocument.isRelated(absolutePath)) {
             if (doc.getLanguage().getId() === "javascript") {
+                _setStatus(STATUS_RELOADING);
                 _protocol.reload();
             }
         }
