@@ -714,7 +714,7 @@ define(function (require, exports, module) {
         
         if ((_liveDocument.doc.url !== docUrl) && isViewable) {
             // Update status
-            _setStatus(STATUS_CONNECTING);
+            _setStatus(STATUS_RELOADING);  // actually loading a different doc, but we can keep the connection
 
             _protocol.evaluate("_LD.loadPage(" + JSON.stringify(docUrl) + ")");
             
