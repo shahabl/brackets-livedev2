@@ -128,6 +128,9 @@ define(function (require, exports, module) {
             .on("message.livedev", function (event, clientId, msg) {
                 _receive(clientId, msg);
             })
+            .on("browser.installed", function (event, browser, result) {
+                $(exports).triggerHandler(event, [browser, result]);
+            })
             .on("close.livedev", function (event, clientId) {
                 $(exports).triggerHandler("close", [clientId]);
             });
@@ -149,8 +152,8 @@ define(function (require, exports, module) {
      * Launches the given URL in the browser. Proxies to the transport.
      * @param {string} url
      */
-    function launch(url, browser) {
-        _transport.launch(url, browser);
+    function launch(url, browser, checkOnly) {
+        _transport.launch(url, browser, checkOnly);
     }
     
     /**

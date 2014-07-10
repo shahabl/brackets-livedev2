@@ -143,9 +143,9 @@
      * @param {string} url
      * @return {number} pid of the new browser process
      */
-    function _cmdLaunch(url, browser, callback) {
+    function _cmdLaunch(url, browser, checkOnly, callback) {
         _createServer();  //:TODO: Need to check for error here?
-        openLiveBrowser(url, browser, callback);
+        openLiveBrowser(url, browser, checkOnly, callback);
     }
     
     /**
@@ -204,6 +204,9 @@
             [{name: "browser",
                 type: "string",
                 description: "name of the browser to open"}],
+            [{name: "checkOnly",
+                type: "boolean",
+                description: "flag, only check if browser installed"}],
 		    [],
             [{name: "pid",  // return value
                 type: "number",

@@ -83,12 +83,16 @@ define(function (require, exports, module) {
         };
     });
     
-    exports.launch = function (url, browser) {
+    exports.launch = function (url, browser, checkOnly) {
         console.log("NodeSocketTransport - launching " + url + " in " + browser);
-        NodeSocketTransportDomain.exec("launch", url, browser).done(function (pid) {
+        NodeSocketTransportDomain.exec("launch", url, browser, checkOnly).done(function (pid) {
             console.log("pid = " + pid);
+            if (checkOnly) {  // We can always trigger the event and ignore this flag if we want to
+                $(exports).triggerHandler("browser.installed", [browser, true]);
+            }
         }).fail(function (err) {
             console.log("[NodeSocketTransport] failed to launch", err);
+            $(exports).triggerHandler("browser.installed", [browser, false]);
         });
     };
 

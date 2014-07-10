@@ -88,7 +88,7 @@
         return deferred.promise;
     }
 
-    function _openLiveBrowserLinux(url, browser, callback) {
+    function _openLiveBrowserLinux(url, browser, checkOnly, callback) {
         var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
         var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
         var res = cpExec("which google-chrome", function (error, path, stderr) {
@@ -103,7 +103,7 @@
         });
     }
 
-    function _openLiveBrowserMac(url, browser, callback) {
+    function _openLiveBrowserMac(url, browser, checkOnly, callback) {
         
         var fs = require("fs"),
             args = [],
@@ -134,7 +134,9 @@
 
         _findAppByKeyMac(appKey)
             .then(function (path) {
-                if (browser === "Chrome") {
+                if (checkOnly) {  // only checking if installed, don't want to open
+                    callback(null, 0);
+                } else if (browser === "Chrome") {
                     //Note: The following wont' work if we don't set the remote-debugging-port
                     var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
                         openBrowser(path, args);
@@ -157,7 +159,7 @@
             .done();
     }
 
-    function _openLiveBrowserWindows(url, browser, callback) {
+    function _openLiveBrowserWindows(url, browser, checkOnly, callback) {
         var Winreg = require('winreg');
         var user_data_dir = getApplicationSupportDirectory() + '\\editor' + '\\live-dev-profile';
 
@@ -257,7 +259,7 @@
      *
      * @return None. This is an asynchronous call that sends all return information to the callback.
      */
-    function openLiveBrowser(url, browser, callback) {
+    function openLiveBrowser(url, browser, checkOnly, callback) {
         var openLiveBrowserPlatform = null;
       
         if (process.platform === "win32") {
@@ -268,7 +270,7 @@
             openLiveBrowserPlatform = _openLiveBrowserLinux;
         }
         if (openLiveBrowserPlatform) {
-            openLiveBrowserPlatform(url, browser, callback);
+            openLiveBrowserPlatform(url, browser, checkOnly, callback);
         }
     }
 

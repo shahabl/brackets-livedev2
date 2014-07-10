@@ -576,6 +576,12 @@ define(function (require, exports, module) {
             if (_server) {
                 // Launch the URL in the browser. If it's the first one to connect back to us,
                 // our status will transition to ACTIVE once it does so.
+                
+                // The following 3 are just for testing the functionality of checking browser installed
+                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "Chrome", true); // true means check only
+                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "FireFox", true);
+                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "ChromeFire", true);
+                
                 _protocol.launch(_server.pathToUrl(doc.file.fullPath), _browser);
 
                 // TODO: timeout if we don't get a connection within a certain time
@@ -585,17 +591,21 @@ define(function (require, exports, module) {
                         _setStatus(STATUS_ACTIVE);
                     }
                 });
-                $(_protocol).on("event", function (event, clientId, msg) {
-                    switch (msg.type) {
-                    case "Document.Related":
-                        var relatedDocs = msg.related;
-                        var docs = Object.keys(relatedDocs.stylesheets);
-                        docs.forEach(function (url) {
-                            _styleSheetAdded(null, url, relatedDocs.stylesheets[url]);
-                        });
-                        break;
-                    }
-                });
+                $(_protocol)
+                    .on("event", function (event, clientId, msg) {
+                        switch (msg.type) {
+                        case "Document.Related":
+                            var relatedDocs = msg.related;
+                            var docs = Object.keys(relatedDocs.stylesheets);
+                            docs.forEach(function (url) {
+                                _styleSheetAdded(null, url, relatedDocs.stylesheets[url]);
+                            });
+                            break;
+                        }
+                    })
+                    .on("browser.installed", function (event, browser, result) {
+                        console.log(browser + (result ? " installed" : " not installed"));
+                    });
             } else {
                 console.error("LiveDevelopment._open(): No server active");
             }
