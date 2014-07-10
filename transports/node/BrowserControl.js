@@ -88,7 +88,7 @@
         return deferred.promise;
     }
 
-    function _openLiveBrowserLinux(url, callback, browser) {
+    function _openLiveBrowserLinux(url, browser, callback) {
         var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
         var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
         var res = cpExec("which google-chrome", function (error, path, stderr) {
@@ -103,7 +103,7 @@
         });
     }
 
-    function _openLiveBrowserMac(url, callback, browser) {
+    function _openLiveBrowserMac(url, browser, callback) {
         
         var fs = require("fs"),
             args = [],
@@ -157,7 +157,7 @@
             .done();
     }
 
-    function _openLiveBrowserWindows(url, callback, browser) {
+    function _openLiveBrowserWindows(url, browser, callback) {
         var Winreg = require('winreg');
         var user_data_dir = getApplicationSupportDirectory() + '\\editor' + '\\live-dev-profile';
 
@@ -257,14 +257,9 @@
      *
      * @return None. This is an asynchronous call that sends all return information to the callback.
      */
-    function openLiveBrowser(url, callback, browser) {
+    function openLiveBrowser(url, browser, callback) {
         var openLiveBrowserPlatform = null;
       
-        if (browser === undefined) {
-            //browser = "Chrome";
-            browser = "FireFox";
-        }
-
         if (process.platform === "win32") {
             openLiveBrowserPlatform = _openLiveBrowserWindows;
         } else if (process.platform === "darwin") {
@@ -273,7 +268,7 @@
             openLiveBrowserPlatform = _openLiveBrowserLinux;
         }
         if (openLiveBrowserPlatform) {
-            openLiveBrowserPlatform(url, callback, browser);
+            openLiveBrowserPlatform(url, browser, callback);
         }
     }
 

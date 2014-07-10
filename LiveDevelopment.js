@@ -130,6 +130,14 @@ define(function (require, exports, module) {
     
     /**
      * @private
+     * The browser to open
+     * Should be "Chrome" or "FireFox"
+     * @type {String}
+     */
+    var _browser = "Chrome";
+    
+    /**
+     * @private
      * Returns true if we think the given extension is for an HTML file.
      * @param {string} ext The extension to check.
      * @return {boolean} true if this is an HTML extension
@@ -568,7 +576,7 @@ define(function (require, exports, module) {
             if (_server) {
                 // Launch the URL in the browser. If it's the first one to connect back to us,
                 // our status will transition to ACTIVE once it does so.
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath));
+                _protocol.launch(_server.pathToUrl(doc.file.fullPath), _browser);
 
                 // TODO: timeout if we don't get a connection within a certain time
                 $(_liveDocument).one("connect", function (event, url) {

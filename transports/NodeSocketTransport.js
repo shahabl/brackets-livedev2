@@ -83,9 +83,9 @@ define(function (require, exports, module) {
         };
     });
     
-    exports.launch = function (url) {
-        console.log("NodeSocketTransport - launch " + url);
-        NodeSocketTransportDomain.exec("launch", url).done(function (pid) {
+    exports.launch = function (url, browser) {
+        console.log("NodeSocketTransport - launching " + url + " in " + browser);
+        NodeSocketTransportDomain.exec("launch", url, browser).done(function (pid) {
             console.log("pid = " + pid);
         }).fail(function (err) {
             console.log("[NodeSocketTransport] failed to launch", err);

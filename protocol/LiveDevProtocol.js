@@ -149,8 +149,8 @@ define(function (require, exports, module) {
      * Launches the given URL in the browser. Proxies to the transport.
      * @param {string} url
      */
-    function launch(url) {
-        _transport.launch(url);
+    function launch(url, browser) {
+        _transport.launch(url, browser);
     }
     
     /**

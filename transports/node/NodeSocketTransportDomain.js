@@ -143,9 +143,9 @@
      * @param {string} url
      * @return {number} pid of the new browser process
      */
-    function _cmdLaunch(url, callback) {
+    function _cmdLaunch(url, browser, callback) {
         _createServer();  //:TODO: Need to check for error here?
-        openLiveBrowser(url, callback);
+        openLiveBrowser(url, browser, callback);
     }
     
     /**
@@ -201,6 +201,9 @@
             [{name: "url", // parameters
                 type: "string",
                 description: "file:// url to the HTML file"}],
+            [{name: "browser",
+                type: "string",
+                description: "name of the browser to open"}],
 		    [],
             [{name: "pid",  // return value
                 type: "number",
