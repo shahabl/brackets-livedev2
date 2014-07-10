@@ -91,7 +91,9 @@ define(function (require, exports, module) {
                 $(exports).triggerHandler("browser.installed", [browser, true]);
             }
         }).fail(function (err) {
-            console.log("[NodeSocketTransport] failed to launch", err);
+            if (!checkOnly) {
+                console.log("[NodeSocketTransport] failed to launch", err);
+            }
             $(exports).triggerHandler("browser.installed", [browser, false]);
         });
     };

@@ -32,9 +32,8 @@
         //:TODO: Check error codes
         NO_ERROR = 0,
         FILE_NOT_FOUND = -1,
-        CANNOT_RUN_BROWSER = -2;
 
-    var MAC_MDFIND_QUERY    = "mdfind \"kMDItemCFBundleIdentifier == '%s'\"",
+        MAC_MDFIND_QUERY    = "mdfind \"kMDItemCFBundleIdentifier == '%s'\"",
         MAC_CODESIGN_QUERY  = "codesign --display \"%s\"";
 
     /**
@@ -179,8 +178,10 @@
             regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
             excutablePath2 = "\\Mozilla\\FireFox\\Application\\firefox.exe";  //TODO: check if this is correct
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
-
             break;
+        default:
+            callback(FILE_NOT_FOUND);
+            return;
         }
 
         var regKey1 = new Winreg({
@@ -194,30 +195,36 @@
         });
 
         function findAndOpenBrowser() {
-            //TODO: Review error handling 
-            regKey1.values(function (err, items) {
-                if (!err && items && items.length) {
-                    var path = items[0].value.replace(/"/g, '');
+            //TODO: Review error handling
+            function openBrowser(path) {
+                if (!checkOnly) {
                     var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
                     if (cp.pid !== 0) {
                         liveBrowserOpenedPIDs.push(cp.pid);
                         callback(null, cp.pid);
                     } else {
-                        callback(CANNOT_RUN_BROWSER);
+                        callback(FILE_NOT_FOUND);
                     }
+                } else {                // if we don't want to actually launch
+                    if (fs.existsSync(path)) {
+                        callback(null, 0);  // indicates browser installed
+                    } else {
+                        callback(FILE_NOT_FOUND);
+                    }
+                }
+            }
+            
+            regKey1.values(function (err, items) {
+                if (!err && items && items.length) {
+                    var path = items[0].value.replace(/"/g, '');
+                    openBrowser(path);
                 } else {
                     regKey2.values(function (err, items) {
                         if (!err && items) {
                             regKey2.get('Local AppData', function (err, item) {
                                 if (!err && item) {
                                     var path = item.value + excutablePath2;
-                                    var cp = spawn(path, args).on('error', console.error); // avoiding Node crash in case of exception
-                                    if (cp.pid !== 0) {
-                                        liveBrowserOpenedPIDs.push(cp.pid);
-                                        callback(null, cp.pid);
-                                    } else {
-                                        callback(CANNOT_RUN_BROWSER);
-                                    }
+                                    openBrowser(path);
                                 }
                             });
                         } else {
@@ -228,7 +235,7 @@
             });
         }
 
-        if (browser === "FireFox" && !fs.existsSync(user_data_dir + "/prefs.js")) {
+        if (browser === "FireFox" && !fs.existsSync(user_data_dir + "/prefs.js") && !checkOnly) {
             // if it's the first time running create a profile
             var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
             regKey1.values(function (err, items) {

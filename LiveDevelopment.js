@@ -578,9 +578,9 @@ define(function (require, exports, module) {
                 // our status will transition to ACTIVE once it does so.
                 
                 // The following 3 are just for testing the functionality of checking browser installed
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "Chrome", true); // true means check only
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "FireFox", true);
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath), "ChromeFire", true);
+                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "Chrome", true); // true means check only
+                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "FireFox", true);
+                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "ChromeFire", true);
                 
                 _protocol.launch(_server.pathToUrl(doc.file.fullPath), _browser);
 
