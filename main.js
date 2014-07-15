@@ -70,6 +70,7 @@ define(function main(require, exports, module) {
 
     var _$btnGoLive; // reference to the GoLive button
     var _$btnHighlight; // reference to the HighlightButton
+    var _defaultBrowser = "Chrome";
 
     /**
      * Change the appearance of a button. Omit text to remove any extra text; omit style to return to default styling;
@@ -113,10 +114,10 @@ define(function main(require, exports, module) {
                     Strings.LIVE_DEVELOPMENT_INFO_TITLE,
                     Strings.LIVE_DEVELOPMENT_INFO_MESSAGE
                 ).done(function (id) {
-                    LiveDevelopment.open();
+                    LiveDevelopment.open(_defaultBrowser);
                 });
             } else {
-                LiveDevelopment.open();
+                LiveDevelopment.open(_defaultBrowser);
             }
         }
     }

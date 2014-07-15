@@ -571,7 +571,7 @@ define(function (require, exports, module) {
      * been created for it. 
      * @param {Document} doc
      */
-    function _open(doc) {
+    function _open(doc, browser) {
         if (doc && _liveDocument && doc === _liveDocument.doc) {
             if (_server) {
                 // Launch the URL in the browser. If it's the first one to connect back to us,
@@ -582,7 +582,9 @@ define(function (require, exports, module) {
                 //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "FireFox", true);
                 //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "ChromeFire", true);
                 
-                _protocol.launch(_server.pathToUrl(doc.file.fullPath), _browser);
+                if(browser) { // if browser is specified launch it, otherwise skip launching the browser
+                    _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser);
+                }
 
                 // TODO: timeout if we don't get a connection within a certain time
                 $(_liveDocument).one("connect", function (event, url) {
@@ -627,7 +629,7 @@ define(function (require, exports, module) {
      * TODO: could probably just consolidate this with _open()
      * @param {Document} doc
      */
-    function _doLaunchAfterServerReady(initialDoc) {
+    function _doLaunchAfterServerReady(initialDoc, browser) {
         // update status
         _setStatus(STATUS_CONNECTING);
         _createLiveDocumentForFrame(initialDoc);
@@ -636,7 +638,7 @@ define(function (require, exports, module) {
         _server.start();
 
         // open browser to the url
-        _open(initialDoc);
+        _open(initialDoc, browser);
     }
     
     /**
@@ -712,7 +714,7 @@ define(function (require, exports, module) {
             // create new live doc
             _createLiveDocumentForFrame(doc);
 
-            open();
+            open(_browser);
         }
         $(_liveDocument).one("connect", function (event, url) {
             var doc = _getCurrentDocument();
@@ -725,9 +727,10 @@ define(function (require, exports, module) {
     /**
      * Open a live preview on the current docuemnt.
      */
-    function open() {
+    function open(browser) {
         // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
         // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
+        _browser = browser;
         _getInitialDocFromCurrent().done(function (doc) {
             var prepareServerPromise = (doc && _prepareServer(doc)) || new $.Deferred().reject(),
                 otherDocumentsInWorkingFiles;
@@ -744,7 +747,7 @@ define(function (require, exports, module) {
             // wait for server (StaticServer, Base URL or file:)
             prepareServerPromise
                 .done(function () {
-                    _doLaunchAfterServerReady(doc);
+                    _doLaunchAfterServerReady(doc, browser);
                 })
                 .fail(function () {
                     _showWrongDocError();
