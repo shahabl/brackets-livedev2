@@ -570,20 +570,17 @@ define(function (require, exports, module) {
      * Launches the given document in the browser, given that a live document has already
      * been created for it. 
      * @param {Document} doc
+     * @param {string} browser The indentifying string of browser to open
+     * @param {boolean} checkOnly Don't acctually open the browser, only check if it's installed
      */
-    function _open(doc, browser) {
+    function _open(doc, browser, checkOnly) {
         if (doc && _liveDocument && doc === _liveDocument.doc) {
             if (_server) {
                 // Launch the URL in the browser. If it's the first one to connect back to us,
                 // our status will transition to ACTIVE once it does so.
                 
-                // The following 3 are just for testing the functionality of checking browser installed
-                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "Chrome", true); // true means check only
-                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "FireFox", true);
-                //_protocol.launch(_server.pathToUrl(doc.file.fullPath), "ChromeFire", true);
-                
-                if(browser) { // if browser is specified launch it, otherwise skip launching the browser
-                    _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser);
+                if (browser) { // if browser is specified launch it, otherwise skip launching the browser
+                    _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser, checkOnly);
                 }
 
                 // TODO: timeout if we don't get a connection within a certain time
@@ -594,6 +591,7 @@ define(function (require, exports, module) {
                     }
                 });
                 $(_protocol)
+                    //:Todo: These handlers are called multiple times (since open is called multiple times from static server, check why
                     .on("event", function (event, clientId, msg) {
                         switch (msg.type) {
                         case "Document.Related":
@@ -606,7 +604,7 @@ define(function (require, exports, module) {
                         }
                     })
                     .on("browser.installed", function (event, browser, result) {
-                        console.log(browser + (result ? " installed" : " not installed"));
+                        $(exports).triggerHandler(event, [browser, result]);
                     });
             } else {
                 console.error("LiveDevelopment._open(): No server active");
@@ -627,9 +625,11 @@ define(function (require, exports, module) {
      * ask it for the instrumented version of the document when the browser 
      * requests it.)
      * TODO: could probably just consolidate this with _open()
+     * @param {string} browser The indentifying string of browser to open
+     * @param {boolean} checkOnly Don't acctually open the browser, only check if it's installed
      * @param {Document} doc
      */
-    function _doLaunchAfterServerReady(initialDoc, browser) {
+    function _doLaunchAfterServerReady(initialDoc, browser, checkOnly) {
         // update status
         _setStatus(STATUS_CONNECTING);
         _createLiveDocumentForFrame(initialDoc);
@@ -638,7 +638,7 @@ define(function (require, exports, module) {
         _server.start();
 
         // open browser to the url
-        _open(initialDoc, browser);
+        _open(initialDoc, browser, checkOnly);
     }
     
     /**
@@ -726,8 +726,10 @@ define(function (require, exports, module) {
 
     /**
      * Open a live preview on the current docuemnt.
+     * @param {string} browser The indentifying string of browser to open
+     * @param {boolean} checkOnly Don't acctually open the browser, only check if it's installed
      */
-    function open(browser) {
+    function open(browser, checkOnly) {
         // TODO: need to run _onDocumentChange() after load if doc != currentDocument here? Maybe not, since activeEditorChange
         // doesn't trigger it, while inline editors can still cause edits in doc other than currentDoc...
         _browser = browser;
@@ -747,7 +749,7 @@ define(function (require, exports, module) {
             // wait for server (StaticServer, Base URL or file:)
             prepareServerPromise
                 .done(function () {
-                    _doLaunchAfterServerReady(doc, browser);
+                    _doLaunchAfterServerReady(doc, browser, checkOnly);
                 })
                 .fail(function () {
                     _showWrongDocError();

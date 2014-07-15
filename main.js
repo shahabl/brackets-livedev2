@@ -117,6 +117,11 @@ define(function main(require, exports, module) {
                     LiveDevelopment.open(_defaultBrowser);
                 });
             } else {
+                // The following 3 are just for testing the functionality of checking browser installed
+                //LiveDevelopment.open("Chrome", true); // true means check only
+                //LiveDevelopment.open("FireFox", true);
+                //LiveDevelopment.open("ChromeFire", true);  // this one should fail
+                
                 LiveDevelopment.open(_defaultBrowser);
             }
         }
@@ -172,12 +177,15 @@ define(function main(require, exports, module) {
     
     /** Maintains state of the Live Preview menu item */
     function _setupGoLiveMenu() {
-        $(LiveDevelopment).on("statusChange", function statusChange(event, status) {
-            // Update the checkmark next to 'Live Preview' menu item
-            // Add checkmark when status is STATUS_ACTIVE; otherwise remove it
-            CommandManager.get("livedev2.live-preview").setChecked(status === LiveDevelopment.STATUS_ACTIVE);
-            CommandManager.get("livedev2.live-preview").setEnabled(status === LiveDevelopment.STATUS_ACTIVE);
-        });
+        $(LiveDevelopment)
+            .on("statusChange", function statusChange(event, status) {
+                // Update the checkmark next to 'Live Preview' menu item
+                // Add checkmark when status is STATUS_ACTIVE; otherwise remove it
+                CommandManager.get("livedev2.live-preview").setChecked(status === LiveDevelopment.STATUS_ACTIVE);
+                CommandManager.get("livedev2.live-preview").setEnabled(status === LiveDevelopment.STATUS_ACTIVE);
+            }).on("browser.installed", function (event, browser, result) {
+                console.log(browser + (result ? " installed" : " not installed"));
+            });
     }
 
     function _updateHighlightCheckmark() {
