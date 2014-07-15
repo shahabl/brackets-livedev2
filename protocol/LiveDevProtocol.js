@@ -307,5 +307,5 @@ define(function (require, exports, module) {
     exports.close = close;
     exports.getConnectionIds = getConnectionIds;
     exports.closeAllConnections = closeAllConnections;
-    exports.closeAllBrowsers = closeAllBrowsers;    
+    exports.closeAllBrowsers = closeAllBrowsers;
 });
