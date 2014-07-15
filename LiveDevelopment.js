@@ -588,7 +588,7 @@ define(function (require, exports, module) {
                     if (browser) { // if browser is specified launch it, otherwise skip launching the browser
                         _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser, checkOnly);
                     }
-		}
+                }
 
                 $(_protocol)
                     // TODO: timeout if we don't get a connection within a certain time
@@ -615,11 +615,11 @@ define(function (require, exports, module) {
                     })
                     // extract stylesheets and create related LiveCSSDocument instances
                     .on("Document.Related.livedev", function (event, msg) {
-                            var relatedDocs = msg.related;
-                            var docs = Object.keys(relatedDocs.stylesheets);
-                            docs.forEach(function (url) {
-                                _styleSheetAdded(null, url, relatedDocs.stylesheets[url]);
-                            });
+                        var relatedDocs = msg.related;
+                        var docs = Object.keys(relatedDocs.stylesheets);
+                        docs.forEach(function (url) {
+                            _styleSheetAdded(null, url, relatedDocs.stylesheets[url]);
+                        });
                     })
                     // create new LiveCSSDocument if a new stylesheet is added
                     .on("Stylesheet.Added.livedev", function (event, msg) {
