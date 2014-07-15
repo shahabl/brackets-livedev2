@@ -21,7 +21,7 @@
  * 
  */
 
-/*jslint browser: true, vars: true, plusplus: true, devel: true, nomen: true, indent: 4, forin: true, maxerr: 50, regexp: true, evil: true */
+/*jslint evil: true */
 
 // This is the script that Brackets live development injects into HTML pages in order to
 // establish and maintain the live development socket connection. Note that Brackets may
@@ -37,181 +37,166 @@
     //     send(msgStr) - sends the given message string over the transport.
     var transport = global._Brackets_LiveDev_Transport;
     
-    //TODO: Protocol should probably have a method addWatcher to dynamically inject oberservers
-    var DocumentObserver = {
+    /**
+     * Manage messaging between Editor and Browser at the protocol layer.
+     * Handle messages that arrives through the current transport and dispatch them 
+     * to subscribers. Subscribers are handlers that implements remote commands/functions.
+     * Property 'method' of messages body is used as the 'key' to identify message types.   
+     * Provide a 'send' operation that allows remote commands sending messages to the Editor.
+     */
+    var MessageBroker = {
+                
+        /**
+         * Collection of handlers (subscribers) per each method.
+         * To be pushed by 'on' and consumed by 'trigger' stored this way: 
+         *      handlers[method] = [handler1, handler2, ...]
+         */
+        handlers: {},
         
-        // @imports references for tracking changes
-        _imports : {},
-        
-        /* init hook. */
-        start:  function () {
-            //start listening to node changes
-            this._enableListeners();
-            //send the current status of related docs. 
-            transport.send(JSON.stringify({
-                type: "Document.Related",
-                related: this.related()
-            }));
-        },
-        
-        /*  Retrieves related documents (external CSS and JS files) */
-        related: function () {
-            var related = {
-                scripts: {},
-                stylesheets: {}
-            };
-            var i;
-            //iterate on document scripts (HTMLCollection doesn't provide forEach iterator).
-            for (i = 0; i < document.scripts.length; i++) {
-                //add only external scripts
-                if (document.scripts[i].src) {
-                    related.scripts[document.scripts[i].src] = true;
-                }
+         /**
+          * Dispatch messages to handlers according to msg.method value.
+          * @param {Object} msg Message to be dispatched.
+          */
+        trigger: function (msg) {
+            var msgHandlers;
+            if (!msg.method) {
+                // no message type, ignoring it
+                // TODO: should we trigger a generic event?
+                console.log("[Brackets LiveDev] Received message without method.");
+                return;
             }
-          
-            var s, j;
-            //traverse @import rules
-            var traverseRules = function _traverseRules(sheet, base) {
-                var i;
-                if (sheet.href && sheet.cssRules) {
-                    if (related.stylesheets[sheet.href] === undefined) {
-                        related.stylesheets[sheet.href] = [];
+            // get handlers for msg.method
+            msgHandlers = this.handlers[msg.method];
+            
+            if (msgHandlers && msgHandlers.length > 0) {
+                // invoke handlers with the received message
+                msgHandlers.forEach(function (handler) {
+                    try {
+                        // TODO: check which context should be used to call handlers here.
+                        handler(msg);
+                        return;
+                    } catch (e) {
+                        console.error("[Brackets LiveDev] Error executing a handler for " + msg.method);
+                        return;
                     }
-                    related.stylesheets[sheet.href].push(base);
-                    //console.log("rule in: " + sheet.href + ", base: " + base);
-                    for (i = 0; i < sheet.cssRules.length; i++) {
-                        if (sheet.cssRules[i].href) {
-                            traverseRules(sheet.cssRules[i].styleSheet, base);
-                        }
-                    }
-                }
-            };
-            //iterate on document.stylesheets (StyleSheetList doesn't provide forEach iterator).
-            for (j = 0; j < document.styleSheets.length; j++) {
-                s = document.styleSheets[j];
-                traverseRules(s, s.href);
-            }
-            return related;
-        },
-        
-        _enableListeners: function () {
-            var self = this;
-            // enable MutationOberver if it's supported
-            var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-            if (MutationObserver) {
-                var observer = new MutationObserver(function (mutations) {
-                    mutations.forEach(function (mutation) {
-                        if (mutation.addedNodes.length > 0) {
-                            self._onNodesChanged(mutation.addedNodes, 'Added');
-                        }
-                        if (mutation.removedNodes.length > 0) {
-                            self._onNodesChanged(mutation.removedNodes, 'Removed');
-                        }
-                    });
                 });
-                observer.observe(document, {
-                    childList: true,
-                    subtree: true
-                });
-
             } else {
-                // use MutationEvents as fallback 
-                document.addEventListener('DOMNodeInserted', function niLstnr(e) {
-                    self._onNodesChanged([e.target], 'Added');
-                });
-                document.addEventListener('DOMNodeRemoved', function nrLstnr(e) {
-                    self._onNodesChanged([e.target], 'Removed');
-                });
+                // no subscribers, ignore it.
+                // TODO: any other default handling? (eg. specific respond, trigger as a generic event, etc.);
+                console.log("[Brackets LiveDev] No subscribers for message " + msg.method);
+                return;
             }
         },
         
-        /* 
-        * Extract styleSheets included in CSSImportRules.
-        * @param {Object} stylesheet
-        * @return {Array} hrefs of import-ed StyleSheets
-        * TODO: check for nested @imports  
-        */
-        _scanImports: function (styleSheet) {
-            var i,
-                imports = [];
-            for (i = 0; i < styleSheet.cssRules.length; i++) {
-                if (styleSheet.cssRules[i].href) {
-                    imports.push(styleSheet.cssRules[i].styleSheet);
-                }
+        /**
+         * Send a response of a particular message to the Editor.
+         * Original message must provide an 'id' property
+         * @param {Object} orig Original message.
+         * @param {Object} response Message to be sent as the response.
+         */
+        respond: function (orig, response) {
+            if (!orig.id) {
+                console.log("[Brackets LiveDev] Trying to send a response for a message with no ID");
+                return;
             }
-            return imports;
-        },
-        /* send an event in case that a related doc was added/removed */
-        _onNodesChanged: function (nodes, action) {
-            var i,
-                self = this;
-            for (i = 0; i < nodes.length; i++) {
-                //check for Javascript files
-                if (nodes[i].nodeName === "SCRIPT" && nodes[i].src) {
-                    transport.send(JSON.stringify({
-                        type: 'Script.' + action,
-                        src: nodes[i].src
-                    }));
-                }
-                //check for stylesheets
-                if (nodes[i].nodeName === "LINK" && nodes[i].rel === "stylesheet" && nodes[i].href) {
-                    transport.send(JSON.stringify({
-                        type: 'Stylesheet.' + action,
-                        href: nodes[i].href
-                    }));
-                    // TODO: check for @import rules. 
-                    // It seems that node we get from MutationRecord doesn't have the entire information:
-                    //  - Added stylesheet has import rules (wich give us relative URL) but in Chrome, 
-                    //    the stylesheet to be imported is not yet loaded (sheet=null). 
-                    //  - Removed stylesheet also has sheet=null since it was proabably already removed.
-                }
-            }
+            response.id = orig.id;
+            this.send(JSON.stringify(response));
         },
         
-        stop: function () {}
+        /**
+         * Subscribe handlers to specific messages.
+         * @param {string} method Message type.
+         * @param {function} handler.
+         * TODO: add handler name or any identification mechanism to then implement 'off'?
+         */
+        on: function (method, handler) {
+            if (!method || !handler) {
+                return;
+            }
+            if (!this.handlers[method]) {
+                //initialize array
+                this.handlers[method] = [];
+            }
+            // add handler to the stack
+            this.handlers[method].push(handler);
+        },
+        
+        /**
+         * Send a message to the Editor.
+         * @param {string} msgStr Message to be sent.
+         */
+        send: function (msgStr) {
+            transport.send(JSON.stringify(msgStr));
+        }
     };
-
+    
+    /**
+     * Runtime Domain. Implements remote commands for "Runtime.*"
+     */
+    var Runtime = {
+        /**
+         * Evaluate an expresion and return its result.
+         */
+        evaluate: function (msg) {
+            console.log("Runtime.evaluate");
+            var result = eval(msg.params.expression);
+            MessageBroker.respond(msg, {
+                result: JSON.stringify(result) // TODO: in original protocol this is an object handle
+            });
+        }
+    };
+    
+    // subscribe handler to method Runtime.evaluate
+    MessageBroker.on("Runtime.evaluate", Runtime.evaluate);
+    
+    /**
+     * Page Domain.
+     */
+    var Page = {
+        /**
+         * Reload the current page optionally ignoring cache.
+         * @param {Object} msg
+         */
+        reload: function (msg) {
+            // just reload the page
+            window.location.reload(msg.params.ignoreCache);
+        }
+    };
+         
+    // subscribe handler to method Page.reload
+    MessageBroker.on("Page.reload", Page.reload);
+        
     /**
      * The remote handler for the protocol.
      */
     var ProtocolHandler = {
         /**
-         * Handles a message from the transport. Parses it as JSON and looks at the
-         * "method" field to determine what the action is.
-         * @param {msgStr} string The protocol message as stringified JSON.
+         * Handles a message from the transport. Parses it as JSON and delegates
+         * to MessageBroker who is in charge of routing them to handlers.
+         * @param {string} msgStr The protocol message as stringified JSON.
          */
         message: function (msgStr) {
-            console.log("received: " + msgStr);
-            var msg = JSON.parse(msgStr);
-            
-            // TODO: more easily extensible way of adding protocol handler methods
-            if (msg.method === "Runtime.evaluate") {
-                console.log("evaluating: " + msg.params.expression);
-                var result = eval(msg.params.expression);
-                console.log("result: " + result);
-                this.respond(msg, {
-                    result: JSON.stringify(result) // TODO: in original protocol this is an object handle
-                });
+            var msg;
+            try {
+                msg = JSON.parse(msgStr);
+            } catch (e) {
+                console.log("[Brackets LiveDev] Invalid Message Received");
+                // TODO: we should probably send back an error message here?
+                return;
             }
-            //DocumentWatcher should probably register this method.
-            if (msg.method === "Document.Related") {
-                console.log("Document.Related");
-                var related = DocumentObserver.related();
-                this.respond(msg, {
-                    related: JSON.stringify(related)
-                });
-            }
+            // delegates handling/routing to MessageBroker.
+            MessageBroker.trigger(msg);
         },
         
-        /**
-         * Responds to a message, setting the response message's ID to the same ID as the
-         * original request.
-         * @param {Object} orig The original message object.
-         * @param {Object} response The response message object.
-         */
-        respond: function (orig, response) {
-            response.id = orig.id;
-            transport.send(JSON.stringify(response));
+        close: function (evt) {
+            // TODO: this is absolutely temporary solution
+            var closedSessionPage = "<head>" +
+                                        "<title>Live Development Session Finished</title>" +
+                                    "</head>" +
+                                    "<body>" +
+                                        "Live Development Session Finished" +
+                                    "</body>";
+            document.getElementsByTagName('HTML')[0].innerHTML =  closedSessionPage;
         }
     };
     
@@ -222,14 +207,5 @@
     }
     
     transport.setCallbacks(ProtocolHandler);
-    
-    
-    window.addEventListener('load', function () {
-        DocumentObserver.start();
-    });
-    
-    window.addEventListener('unload', function () {
-        DocumentObserver.stop();
-    });
-    
+
 }(this));

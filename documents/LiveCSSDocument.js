@@ -62,7 +62,7 @@ define(function LiveCSSDocumentModule(require, exports, module) {
      *     If not specified initially, the LiveDocument will connect to the editor for the given document
      *     when it next becomes the active editor.
      */
-    var LiveCSSDocument = function LiveCSSDocument(protocol, urlResolver, doc, editor, connections, roots) {
+    var LiveCSSDocument = function LiveCSSDocument(protocol, urlResolver, doc, editor, roots) {
         LiveDocument.apply(this, arguments);
         
         // Add a ref to the doc since we're listening for change events
@@ -117,18 +117,17 @@ define(function LiveCSSDocumentModule(require, exports, module) {
     };
 
     /**
-     * @private
      * When the user edits the file, update the stylesheet in the browser and redraw highlights.
      */
-    LiveCSSDocument.prototype._updateBrowser = function () {
+    LiveCSSDocument.prototype.updateBrowser = function () {
         var i;
         for (i = 0; i < this.roots.length; i++) {
             if (this.doc.url !== this.roots[i]) {
                 // if it's not directly included through <link>,
                 // reload the original doc
-                $(this).triggerHandler("updateDoc", this.roots[0]);
+                $(this).triggerHandler("updateDoc", this.roots[i]);
             } else {
-                this.protocol.evaluate(this.getConnectionIds(), "_LD.reloadCSS(" +
+                this.protocol.evaluate("_LD.reloadCSS(" +
                                        JSON.stringify(this.doc.url) + ", " +
                                        JSON.stringify(this.doc.getText()) + ")");
             }
@@ -136,12 +135,6 @@ define(function LiveCSSDocumentModule(require, exports, module) {
         this.redrawHighlights();
     };
 
-    /**
-     * Update the stylesheet in the browser and redraw highlights.
-     */
-    LiveCSSDocument.prototype.updateBrowser = function () {
-        this._updateBrowser();
-    };
     /**
      * @override
      * Update the highlights in the browser based on the cursor position.
@@ -184,7 +177,7 @@ define(function LiveCSSDocumentModule(require, exports, module) {
      * @param {Object} change
      */
     LiveCSSDocument.prototype.onChange = function (event, editor, change) {
-        this._updateBrowser();
+        this.updateBrowser();
     };
 
     /** 

@@ -71,6 +71,7 @@ define(function (require, exports, module) {
     var STATUS_ACTIVE         = exports.STATUS_ACTIVE         =  3;
     var STATUS_OUT_OF_SYNC    = exports.STATUS_OUT_OF_SYNC    =  4;
     var STATUS_SYNC_ERROR     = exports.STATUS_SYNC_ERROR     =  5;
+    var STATUS_RELOADING      = exports.STATUS_RELOADING      =  6;
 
     var Async                = brackets.getModule("utils/Async"),
         Dialogs              = brackets.getModule("widgets/Dialogs"),
@@ -226,9 +227,10 @@ define(function (require, exports, module) {
      * @param {$.Event} event
      * @param {LiveDocument} liveDoc
      */
-    function _handleRelatedDocumentDeleted(event, liveDoc) {
-        if (_relatedDocuments[liveDoc.doc.url]) {
-            delete _relatedDocuments[liveDoc.doc.url];
+    function _handleRelatedDocumentDeleted(url) {
+        var liveDoc = _relatedDocuments[url];
+        if (liveDoc) {
+            delete _relatedDocuments[url];
         }
             
         if (_server) {
@@ -293,13 +295,12 @@ define(function (require, exports, module) {
      * editor and the browser.
      * @param {Document} doc
      * @param {Editor} editor
-     * @param {Connections} connections
      * @param {roots} roots
      * @return {?LiveDocument} The live document, or null if this type of file doesn't support live editing.
      */
-    function _createLiveDocument(doc, editor, connections, roots) {
+    function _createLiveDocument(doc, editor, roots) {
         var DocClass        = _classForDocument(doc),
-            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor, connections, roots);
+            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor, roots);
 
         if (!DocClass) {
             return null;
@@ -355,12 +356,12 @@ define(function (require, exports, module) {
         docPromise.done(function (doc) {
             if ((_classForDocument(doc) === LiveCSSDocument) &&
                     (!_liveDocument || (doc !== _liveDocument.doc))) {
-                var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections, roots);
+                var liveDoc = _createLiveDocument(doc, null, roots);
                 if (liveDoc) {
                     _server.add(liveDoc);
                     _relatedDocuments[doc.url] = liveDoc;
                     _setStatus(STATUS_ACTIVE); // since opening one of the related docs
-                    $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
+                    
                     $(liveDoc).on("updateDoc", function (event, url) {
                         var path = _server.urlToPath(url),
                             doc = getLiveDocForPath(path);
@@ -503,6 +504,8 @@ define(function (require, exports, module) {
         if (exports.status !== STATUS_INACTIVE) {
             // Close live documents 
             _closeDocuments();
+            // Close all active connections
+            _protocol.closeAllConnections();
             
             if (_server) {
                 // Stop listening for requests when disconnected
@@ -516,6 +519,9 @@ define(function (require, exports, module) {
         if (doCloseWindow) {
             _protocol.closeAllBrowsers();
         }
+        
+        // Close all active connections
+        _protocol.closeAllConnections();
        
         _setStatus(STATUS_INACTIVE, reason || "explicit_close");
     }
@@ -576,32 +582,52 @@ define(function (require, exports, module) {
     function _open(doc, browser, checkOnly) {
         if (doc && _liveDocument && doc === _liveDocument.doc) {
             if (_server) {
-                // Launch the URL in the browser. If it's the first one to connect back to us,
-                // our status will transition to ACTIVE once it does so.
+                // Launch the URL in the browser. 
+                if (exports.status < STATUS_ACTIVE) {
                 
-                if (browser) { // if browser is specified launch it, otherwise skip launching the browser
-                    _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser, checkOnly);
-                }
-
-                // TODO: timeout if we don't get a connection within a certain time
-                $(_liveDocument).one("connect", function (event, url) {
-                    var doc = _getCurrentDocument();
-                    if (doc && url === _resolveUrl(doc.file.fullPath)) {
-                        _setStatus(STATUS_ACTIVE);
+                    if (browser) { // if browser is specified launch it, otherwise skip launching the browser
+                        _protocol.launch(_server.pathToUrl(doc.file.fullPath), browser, checkOnly);
                     }
-                });
+		}
+
                 $(_protocol)
-                    //:Todo: These handlers are called multiple times (since open is called multiple times from static server, check why
-                    .on("event", function (event, clientId, msg) {
-                        switch (msg.type) {
-                        case "Document.Related":
+                    // TODO: timeout if we don't get a connection within a certain time
+                    .on("Connection.connect.livedev", function (event, msg) {
+                        if (_protocol.getConnectionIds().length === 1) {
+                            /*
+                            var doc = _getCurrentDocument();
+                            if (doc && msg.url === _resolveUrl(doc.file.fullPath)) {
+                                
+                            }*/
+                            if (exports.status === STATUS_RELOADING) {
+                                _setStatus(STATUS_ACTIVE);
+                            }
+                            
+                        }
+                    })
+                    .on("Connection.close.livedev", function (event, msg) {
+                        // close session when the last connection was closed
+                        if (_protocol.getConnectionIds().length === 0) {
+                            if (exports.status !== STATUS_RELOADING) {
+                                close();
+                            }
+                        }
+                    })
+                    // extract stylesheets and create related LiveCSSDocument instances
+                    .on("Document.Related.livedev", function (event, msg) {
                             var relatedDocs = msg.related;
                             var docs = Object.keys(relatedDocs.stylesheets);
                             docs.forEach(function (url) {
                                 _styleSheetAdded(null, url, relatedDocs.stylesheets[url]);
                             });
-                            break;
-                        }
+                    })
+                    // create new LiveCSSDocument if a new stylesheet is added
+                    .on("Stylesheet.Added.livedev", function (event, msg) {
+                        _styleSheetAdded(null, msg.href, [msg.href]);
+                    })
+                    // remove LiveCSSDocument instance when stylesheet is removed
+                    .on("Stylesheet.Removed.livedev", function (event, msg) {
+                        _handleRelatedDocumentDeleted(msg.href);
                     })
                     .on("browser.installed", function (event, browser, result) {
                         $(exports).triggerHandler(event, [browser, result]);
@@ -778,18 +804,12 @@ define(function (require, exports, module) {
             return;
         }
         
-        // TODO: check if the given document was requested by the live HTML document,
-        // and if so, reload the page. We used to track this via a CDT event that would fire
-        // whenever the browser was about to make another request. We should figure out whether
-        // we can/want to implement this the same way (by trying to detect when requests are made
-        // from the browser itself and dispatching an event over the protocol), or just try to
-        // detect it on our side by seeing what files the server serves up. (If we allow multiple
-        // documents to be live previewed at once, we'd need to match up the files being
-        // served with their associated main documents, probably via the referrer.)
-        
+        // reload the page if the given document is a JS file related 
+        // to the current live document.
         if (_liveDocument.isRelated(absolutePath)) {
             if (doc.getLanguage().getId() === "javascript") {
-                _liveDocument.reload();
+                _setStatus(STATUS_RELOADING);
+                _protocol.reload();
             }
         }
     }
