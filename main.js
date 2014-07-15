@@ -119,7 +119,7 @@ define(function main(require, exports, module) {
             } else {
                 // The following 3 are just for testing the functionality of checking browser installed
                 //LiveDevelopment.open("Chrome", true); // true means check only
-                //LiveDevelopment.open("FireFox", true);
+                //LiveDevelopment.open("fireFox", true);
                 //LiveDevelopment.open("ChromeFire", true);  // this one should fail
                 
                 LiveDevelopment.open(_defaultBrowser);

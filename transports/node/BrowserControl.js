@@ -125,7 +125,7 @@
             args = [url, "--no-first-run", "--no-default-browser-check", "--allow-file-access-from-files", "--temp-profile", "--user-data-dir=" + user_data_dir];
             appKey = "com.google.Chrome";
             break;
-        case "FireFox":
+        case "Firefox":
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
             appKey = "org.mozilla.firefox";
             break;
@@ -140,7 +140,7 @@
                     var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
                         openBrowser(path, args);
                     });
-                } else if (browser === "FireFox") {
+                } else if (browser === "Firefox") {
                     if (!fs.existsSync(user_data_dir + "/prefs.js")) {
                         // if it's the first time running create a profile
                         var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
@@ -174,9 +174,9 @@
             excutablePath2 = '\\Google\\Chrome\\Application\\chrome.exe';
             args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
             break;
-        case "FireFox":
+        case "Firefox":
             regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
-            excutablePath2 = "\\Mozilla\\FireFox\\Application\\firefox.exe";  //TODO: check if this is correct
+            excutablePath2 = "\\Mozilla\\Firefox\\Application\\firefox.exe";  //TODO: check if this is correct
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
             break;
         default:
@@ -235,7 +235,7 @@
             });
         }
 
-        if (browser === "FireFox" && !fs.existsSync(user_data_dir + "/prefs.js") && !checkOnly) {
+        if (browser === "Firefox" && !fs.existsSync(user_data_dir + "/prefs.js") && !checkOnly) {
             // if it's the first time running create a profile
             var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
             regKey1.values(function (err, items) {

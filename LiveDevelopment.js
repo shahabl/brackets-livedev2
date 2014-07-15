@@ -132,7 +132,7 @@ define(function (require, exports, module) {
     /**
      * @private
      * The browser to open
-     * Should be "Chrome" or "FireFox"
+     * Should be "Chrome" or "Firefox"
      * @type {String}
      */
     var _browser = "Chrome";
