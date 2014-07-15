@@ -121,11 +121,11 @@
         }
         
         switch (browser) {
-        case "Chrome":
+        case "chrome":
             args = [url, "--no-first-run", "--no-default-browser-check", "--allow-file-access-from-files", "--temp-profile", "--user-data-dir=" + user_data_dir];
             appKey = "com.google.Chrome";
             break;
-        case "Firefox":
+        case "firefox":
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
             appKey = "org.mozilla.firefox";
             break;
@@ -135,12 +135,12 @@
             .then(function (path) {
                 if (checkOnly) {  // only checking if installed, don't want to open
                     callback(null, 0);
-                } else if (browser === "Chrome") {
+                } else if (browser === "chrome") {
                     //Note: The following wont' work if we don't set the remote-debugging-port
                     var res = cpExec("kill $(ps -Aco pid,args | awk '/remote-debugging-port=9222/{print$1}')", function (error, stdout, stderr) {
                         openBrowser(path, args);
                     });
-                } else if (browser === "Firefox") {
+                } else if (browser === "firefox") {
                     if (!fs.existsSync(user_data_dir + "/prefs.js")) {
                         // if it's the first time running create a profile
                         var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
@@ -169,12 +169,12 @@
             fs = require("fs");
 
         switch (browser) {
-        case "Chrome":
+        case "chrome":
             regKeyPath1 = '\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe';
             excutablePath2 = '\\Google\\Chrome\\Application\\chrome.exe';
             args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
             break;
-        case "Firefox":
+        case "firefox":
             regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
             excutablePath2 = "\\Mozilla\\Firefox\\Application\\firefox.exe";  //TODO: check if this is correct
             args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
@@ -235,7 +235,7 @@
             });
         }
 
-        if (browser === "Firefox" && !fs.existsSync(user_data_dir + "/prefs.js") && !checkOnly) {
+        if (browser === "firefox" && !fs.existsSync(user_data_dir + "/prefs.js") && !checkOnly) {
             // if it's the first time running create a profile
             var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
             regKey1.values(function (err, items) {
@@ -268,7 +268,7 @@
      */
     function openLiveBrowser(url, browser, checkOnly, callback) {
         var openLiveBrowserPlatform = null;
-      
+
         if (process.platform === "win32") {
             openLiveBrowserPlatform = _openLiveBrowserWindows;
         } else if (process.platform === "darwin") {
@@ -277,7 +277,7 @@
             openLiveBrowserPlatform = _openLiveBrowserLinux;
         }
         if (openLiveBrowserPlatform) {
-            openLiveBrowserPlatform(url, browser, checkOnly, callback);
+            openLiveBrowserPlatform(url, browser.toLowerCase(), checkOnly, callback);
         }
     }
 
