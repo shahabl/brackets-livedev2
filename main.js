@@ -117,10 +117,14 @@ define(function main(require, exports, module) {
                     LiveDevelopment.open(_defaultBrowser);
                 });
             } else {
-                // The following 3 are just for testing the functionality of checking browser installed
-                //LiveDevelopment.open("Chrome", true); // true means check only
+                // The following 3 are just to show how to list installed browsers or check if a certain browser isinstalled
+                //LiveDevelopment.open("Chrome", true); // true means only check installed, do not launch
                 //LiveDevelopment.open("fireFox", true);
                 //LiveDevelopment.open("ChromeFire", true);  // this one should fail
+                var promise = LiveDevelopment.getAvailableBrowsers();
+                promise.done(function (browsers) {
+                    console.log(browsers); // array listing all supported browsers that are installed
+                });
                 
                 LiveDevelopment.open(_defaultBrowser);
             }

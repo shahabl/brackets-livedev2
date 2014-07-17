@@ -916,6 +916,41 @@ define(function (require, exports, module) {
         return _server && _server.getBaseUrl();
     }
     
+    /**
+     * Returns a promise
+     * When resolved returns an array of strings, listing the supported browsers installed on the system
+     * @return {jQuery.Promise}
+     */
+    function getAvailableBrowsers() {
+        var result = new $.Deferred();
+        var supportedBrowsers = ["Chrome", "Firefox"]; // this is a list of browsers we know we're supporting (can launch)
+        var returnedResults = [];
+        var installedBrowsers = [];
+
+        function handleBrowserChecked(event, browser, installed) {
+            if (returnedResults.indexOf(browser) < 0) { // checking to get the result for each browser only once
+                returnedResults.push(browser);
+                if (installed) {
+                    installedBrowsers.push(browser);  // add to the list if installed
+                }
+                if (returnedResults.length === supportedBrowsers.length) { // when all results are received
+                    $(_protocol).off("browser.installed", handleBrowserChecked);
+                    result.resolve(installedBrowsers);
+                }
+            }
+        }
+        
+        $(_protocol).on("browser.installed", handleBrowserChecked);
+
+        // check if each browser in our list is installed
+        // if desired we can add a timeout to reject the promise if all answers are not received after a while
+        supportedBrowsers.forEach(function (browser) {
+            open(browser, true); // only check if browser is installed
+        });
+        
+        return result;
+    }
+    
     // For unit testing
     exports._getServer                = _getServer;
     exports._getInitialDocFromCurrent = _getInitialDocFromCurrent;
@@ -929,4 +964,5 @@ define(function (require, exports, module) {
 //    exports.getCurrentProjectServerConfig = getCurrentProjectServerConfig;
     exports.getServerBaseUrl    = getServerBaseUrl;
     exports.setTransport        = setTransport;
+    exports.getAvailableBrowsers = getAvailableBrowsers;
 });
