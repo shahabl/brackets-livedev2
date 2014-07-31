@@ -88,12 +88,29 @@
     }
 
     function _openLiveBrowserLinux(url, browser, checkOnly, callback) {
-        var user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
-        var args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
-        var res = cpExec("which google-chrome", function (error, path, stderr) {
+
+        var args = [],
+            appWhich = "",
+            cp = {pid: 0},
+            user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
+
+        switch (browser) {
+        case "chrome":
+            args = [url, '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files', '--temp-profile', '--user-data-dir=' + user_data_dir];
+            appWhich = "which google-chrome";
+            break;
+        case "firefox":
+            args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
+            appWhich = "which firefox";
+            break;
+        }
+
+        var res = cpExec(appWhich, function (error, path, stderr) {
             if (error === null && path) {
-                var cp = spawn(path.trim(), args);
-                liveBrowserOpenedPIDs.push(cp.pid);
+                if (!checkOnly) {
+                    cp = spawn(path.trim(), args);
+                    liveBrowserOpenedPIDs.push(cp.pid);
+                }
                 callback(null, cp.pid);
             } else {
                 //TODO: Review error handling
