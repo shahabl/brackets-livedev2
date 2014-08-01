@@ -100,7 +100,7 @@
             appWhich = "which google-chrome";
             break;
         case "firefox":
-            args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
+            args = ["-silent", "-P", "live-dev-profile", "-url", url];
             appWhich = "which firefox";
             break;
         }
@@ -143,7 +143,7 @@
             appKey = "com.google.Chrome";
             break;
         case "firefox":
-            args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
+            args = ["-silent", "-P", "live-dev-profile", "-url", url];
             appKey = "org.mozilla.firefox";
             break;
         }
