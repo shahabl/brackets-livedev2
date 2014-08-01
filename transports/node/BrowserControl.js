@@ -41,6 +41,8 @@
      * An array of opened browser pids.
      */
     var liveBrowserOpenedPIDs = [];
+    
+    var userProfileCount = 0;  // This is used in a workaround for Firefox Mac. Incremented to create multiple profiles if multiple instances of Firefox are needed.
 
     // The following function is temp for testing, //:TODO: Set and get the appropriate folder
     function getApplicationSupportDirectory() {
@@ -124,7 +126,7 @@
         var fs = require("fs"),
             args = [],
             appKey = "",
-            user_data_dir = getApplicationSupportDirectory() + "/editor" + "/live-dev-profile";
+            user_data_dir = getApplicationSupportDirectory() + "/editor" + "/live-dev-profile" + userProfileCount;
 
         function openBrowser(path, args) {
             if (path) {
@@ -143,7 +145,7 @@
             appKey = "com.google.Chrome";
             break;
         case "firefox":
-            args = ["-silent", "-P", "live-dev-profile", "-url", url];
+            args = ["-silent", "-P", "live-dev-profile" + userProfileCount, "-url", url];
             appKey = "org.mozilla.firefox";
             break;
         }
@@ -160,11 +162,12 @@
                 } else if (browser === "firefox") {
                     if (!fs.existsSync(user_data_dir + "/prefs.js")) {
                         // if it's the first time running create a profile
-                        var args2 = ["-createProfile", "live-dev-profile " + user_data_dir];
+                        var args2 = ["-createProfile", "live-dev-profile" + userProfileCount + " " + user_data_dir];
                         spawn(path, args2);
-                        setTimeout(function () {openBrowser(path, args); }, 500); // open the browser after a delay to give time to above run first
+                        setTimeout(function () {openBrowser(path, args); userProfileCount++; }, 500); // open the browser after a delay to give time to above run first
                     } else {
                         openBrowser(path, args);
+                        userProfileCount++;
                     }
                 }
             })
