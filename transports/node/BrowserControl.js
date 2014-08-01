@@ -194,7 +194,7 @@
         case "firefox":
             regKeyPath1 = "\\SOFTWARE\\Clients\\StartMenuInternet\\FIREFOX.EXE\\shell\\open\\command";
             excutablePath2 = "\\Mozilla\\Firefox\\Application\\firefox.exe";  //TODO: check if this is correct
-            args = ["-silent", "-no-remote", "-new-window", "-P", "live-dev-profile", "-url", url];
+            args = ["-silent", "-P", "live-dev-profile", "-url", url];
             break;
         default:
             callback(FILE_NOT_FOUND);
