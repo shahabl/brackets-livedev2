@@ -42,7 +42,7 @@
      */
     var liveBrowserOpenedPIDs = [];
     
-    var userProfileCount = 0;  // This is used in a workaround for Firefox Mac. Incremented to create multiple profiles if multiple instances of Firefox are needed.
+    var userProfileCount = 0;  // This is used in a workaround for Firefox Mac & Linux. Incremented to create multiple profiles if multiple instances of Firefox are needed.
 
     // The following function is temp for testing, //:TODO: Set and get the appropriate folder
     function getApplicationSupportDirectory() {
@@ -51,7 +51,7 @@
         } else if (process.platform === "darwin") {
             return process.env.HOME + "/TEMP";
         } else if (process.platform === "linux") {
-            return '$/users/username/TEMP';
+            return process.env.HOME + "/TEMP";
         }
         return null;
     }
@@ -91,10 +91,11 @@
 
     function _openLiveBrowserLinux(url, browser, checkOnly, callback) {
 
-        var args = [],
+        var fs = require("fs"),
+            args = [],
             appWhich = "",
             cp = {pid: 0},
-            user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile';
+            user_data_dir = getApplicationSupportDirectory() + '/editor' + '/live-dev-profile' + userProfileCount;
 
         switch (browser) {
         case "chrome":
@@ -102,7 +103,7 @@
             appWhich = "which google-chrome";
             break;
         case "firefox":
-            args = ["-silent", "-P", "live-dev-profile", "-url", url];
+            args = ["-silent", "-P", "live-dev-profile" + userProfileCount, "-url", url];
             appWhich = "which firefox";
             break;
         }
@@ -110,8 +111,20 @@
         var res = cpExec(appWhich, function (error, path, stderr) {
             if (error === null && path) {
                 if (!checkOnly) {
-                    cp = spawn(path.trim(), args);
-                    liveBrowserOpenedPIDs.push(cp.pid);
+                    if (browser === "firefox" && !fs.existsSync(user_data_dir + "/prefs.js")) {
+                        // if it's the first time running create a profile
+                        var args2 = ["-createProfile", "live-dev-profile" + userProfileCount + " " + user_data_dir];
+                        spawn(path.trim(), args2);
+                        setTimeout(function () {
+                            cp = spawn(path.trim(), args);
+                            liveBrowserOpenedPIDs.push(cp.pid);
+                            userProfileCount++;
+                        }, 500); // open the browser after a delay to give time to above run first
+                    } else {
+                        cp = spawn(path.trim(), args);
+                        liveBrowserOpenedPIDs.push(cp.pid);
+                        userProfileCount++;
+                    }
                 }
                 callback(null, cp.pid);
             } else {
